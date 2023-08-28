@@ -4,6 +4,10 @@ import { Document, Page } from 'react-pdf';
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { pdfjs } from 'react-pdf';
+import Map from "@arcgis/core/Map";
+import MapView from "@arcgis/core/views/MapView";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+import Graphic from "@arcgis/core/Graphic";
 
 // Set the worker source for pdfjs.
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
@@ -93,18 +97,35 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   /**
    * Generate a PDF report from the selected feature layer record.
    */
-  const generateTestPDF = () => {
+  const generateTestPDF = async () => {
     const featureName = selectedRecord?.feature.attributes?.name || "Unknown Name";
     const geometry = selectedRecord?.feature.geometry;
 
-    // Create canvas and draw polygon
-    const canvas = document.createElement('canvas');
     const canvasWidth = 720;
     const canvasHeight = 540;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    const ctx = canvas.getContext('2d');
 
+    // Create a canvas for the basemap
+    const basemapCanvas = document.createElement('canvas');
+    basemapCanvas.width = canvasWidth;
+    basemapCanvas.height = canvasHeight;
+    const basemapCtx = basemapCanvas.getContext('2d');
+
+    // Fetch the tile for the entire world at zoom level 0
+    const tileUrl = `https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/0/0/0`;
+    const response = await fetch(tileUrl);
+    const blob = await response.blob();
+    const img = await createImageBitmap(blob);
+    basemapCtx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+
+    const basemapImgData = basemapCanvas.toDataURL('image/png');
+
+    // Create a canvas for the polygon
+    const polygonCanvas = document.createElement('canvas');
+    polygonCanvas.width = canvasWidth;
+    polygonCanvas.height = canvasHeight;
+    const polygonCtx = polygonCanvas.getContext('2d');
+
+    // Draw the selected feature's polygon
     if (geometry && geometry.rings) {
       const { minX, minY, maxX, maxY } = getBoundingBox(geometry.rings);
       const width = maxX - minX;
@@ -117,28 +138,29 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       const translateX = (canvasWidth - width * scale) / 2 - minX * scale;
       const translateY = (canvasHeight - height * scale) / 2 - minY * scale;
 
-      ctx.beginPath();
+      polygonCtx.beginPath();
       geometry.rings[0].forEach((point, index) => {
         const [x, y] = point;
         const canvasX = x * scale + translateX;
         const canvasY = y * scale + translateY;
         if (index === 0) {
-          ctx.moveTo(canvasX, canvasY);
+          polygonCtx.moveTo(canvasX, canvasY);
         } else {
-          ctx.lineTo(canvasX, canvasY);
+          polygonCtx.lineTo(canvasX, canvasY);
         }
       });
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(255,0,0,0.5)';
-      ctx.fill();
-      ctx.strokeStyle = 'red';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      polygonCtx.closePath();
+      polygonCtx.fillStyle = 'rgba(255,0,0,0.5)';
+      polygonCtx.fill();
+      polygonCtx.strokeStyle = 'red';
+      polygonCtx.lineWidth = 3;
+      polygonCtx.stroke();
     } else {
       console.log("No geometry found for the selected record.");
     }
 
-    const imgData = canvas.toDataURL('image/png');
+    const polygonImgData = polygonCanvas.toDataURL('image/png');
+
     const slideContent = {
       table: {
         widths: ['*'],
@@ -168,10 +190,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const docDefinition = {
       content: [
         slideContent,
-        slideContent,
-        slideContent,
         {
-          image: imgData,
+          image: basemapImgData,
+          width: canvasWidth,
+          height: canvasHeight
+        },
+        {
+          image: polygonImgData,
           width: canvasWidth,
           height: canvasHeight
         }
@@ -180,12 +205,16 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       pageOrientation: 'landscape'
     };
 
+    if (!selectedRecord || !selectedRecord.feature || !selectedRecord.feature.geometry) {
+      console.error("Invalid record or geometry. Cannot generate PDF.");
+      return;
+    }
+
     pdfMake.createPdf(docDefinition).getBlob((blob) => {
       setPdfBlob(blob);
       setShowPDFPane(true);
     });
   };
-
 
   /**
    * Handle the click event to generate the PDF report.
@@ -210,6 +239,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       <>
         <div className="record-list" style={{ width: '100%', marginTop: '20px', height: 'calc(100% - 80px)', overflow: 'auto' }}>
           <select onChange={handleDropdownChange}>
+            <option value="" disabled selected>Select a record</option>
             {records.map((record, i) => (
               <option key={i} value={i}>
                 {record.getData()[fName] || "Unnamed"}
@@ -233,10 +263,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             alignItems: 'center',
             border: '1px solid black',
           }}>
-            <button onClick={() => setShowPDFPane(false)} style={{ margin: '10px' }}>Close</button>
-            <button onClick={handleDownload} style={{ margin: '10px' }}>Download PDF</button>
-            <button onClick={handleZoomIn} style={{ margin: '10px' }}>Zoom In</button>
-            <button onClick={handleZoomOut} style={{ margin: '10px' }}>Zoom Out</button>
+            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <button onClick={handleZoomIn} style={{ margin: '10px' }}>+</button>
+                <button onClick={handleZoomOut} style={{ margin: '10px' }}>-</button>
+              </div>
+              <button onClick={handleDownload} style={{ margin: '10px' }}>Download PDF</button>
+              <button onClick={() => setShowPDFPane(false)} style={{ margin: '10px' }}>Close</button>
+            </div>
             <div style={{ width: '90%', height: '80%', overflow: 'auto' }}>
               <Document
                 file={pdfBlob}
