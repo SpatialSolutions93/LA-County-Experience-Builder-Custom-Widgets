@@ -1,16 +1,20 @@
-import { React, DataSourceManager, DataSourceStatus, DataSourceComponent, AllWidgetProps } from 'jimu-core';
-import type { IMDataSourceInfo, DataSource, FeatureLayerQueryParams } from 'jimu-core';
+import { React, DataSourceComponent, AllWidgetProps } from 'jimu-core';
+import type { DataSource } from 'jimu-core';
 import { Document, Page } from 'react-pdf';
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { pdfjs } from 'react-pdf';
-import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
 import { CSSProperties } from 'react';
 import WebMap from '@arcgis/core/WebMap';
 import MapView from '@arcgis/core/views/MapView';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
 import Extent from "@arcgis/core/geometry/Extent.js";
+import Graphic from '@arcgis/core/Graphic';
+import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
+import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
+import Polygon from "@arcgis/core/geometry/Polygon";
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import './widgetStyles.css';
 
 // Set the worker source for pdfjs.
@@ -18,13 +22,18 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 const { useRef, useState } = React;
 
+let pointsInsideFeature;
+
+let layerView;
+
 const paneStyle: CSSProperties = {
   position: 'absolute',
   top: '20%',
   width: '100%',
   height: '80%',
   backgroundColor: 'white',
-  border: '1px solid black'
+  border: '1px solid black',
+  //visibility: 'hidden' UPDATE UPDATE ENABLE IN FINAL DEPLOYMENT
 };
 
 // Set up the virtual file system for pdfMake.
@@ -68,31 +77,109 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     setZoomLevel(prevZoom => Math.max(prevZoom - 0.1, 0.5));
   }
 
+  const filterPointsWithinPolygon = (polygonGeometry) => {
+    // Set a spatial filter on the layer view
+    layerView.filter = {
+      geometry: polygonGeometry,
+      spatialRelationship: "intersects"
+    };
+  };
+
+  const getPointsInsideFeature = () => {
+    // Define query parameters
+    const query = layerView.layer.createQuery();
+    query.geometry = layerView.filter.geometry; // We use the filter geometry
+    query.spatialRelationship = "intersects";
+
+    return layerView.queryFeatures(query)
+      .then(result => {
+        return result.features.length;
+      });
+  };
+
+
+  const createMask = (geometry) => {
+    const mapView = mapViewRef.current;
+
+    // Create an instance of the GraphicsLayer
+    const maskLayer = new GraphicsLayer();
+
+    mapView.map.add(maskLayer);
+
+    // Create a large polygon that covers the whole map
+    const bigPolygon = new Polygon({
+      rings: [
+        [
+          [-20037508.3427892, -20037508.3427892],
+          [-20037508.3427892, 20037508.3427892],
+          [20037508.3427892, 20037508.3427892],
+          [20037508.3427892, -20037508.3427892],
+          [-20037508.3427892, -20037508.3427892]
+        ]
+      ],
+      spatialReference: mapView.spatialReference
+    });
+
+    // Subtract the feature's geometry from the big polygon to get the mask
+    const mask = geometryEngine.difference(bigPolygon, geometry) as Polygon;
+
+    const symbol = new SimpleFillSymbol({
+      color: [0, 0, 0, 0],
+      outline: {
+        color: [0, 0, 0, 0],
+        width: 0
+      }
+    });
+
+    // Create a graphic for the mask
+    const maskGraphic = new Graphic({
+      geometry: mask,
+      symbol: symbol
+    });
+
+    // Clear previous mask graphics and add the new mask to the GraphicsLayer
+    maskLayer.graphics.removeAll();
+    maskLayer.graphics.add(maskGraphic);
+  };
+
+  const waitForLayerViewUpdate = () => {
+    return new Promise<void>(resolve => {
+      if (!layerView.updating) {
+        resolve();
+      } else {
+        const handle = layerView.watch('updating', updating => {
+          if (!updating) {
+            handle.remove();
+            resolve();
+          }
+        });
+      }
+    });
+  };
+
   /**
    * Handler for dropdown change event.
    * @param {Event} event - The event object.
    */
   const handleDropdownChange = (event) => {
     const mapView = mapViewRef.current;
-    console.log("Mapview spatial ref:", mapView.spatialReference); // Logging the map view spatial reference
     const selectedIndex = event.target.value;
     const record = records[selectedIndex];
-    console.log("Selected Record:", record); // Logging the selected record
     setSelectedRecord(record);
 
     // Zoom to the feature's extent
     if (record && record.feature && record.feature.geometry) {
       const featureExtent = record.feature.geometry.extent;
-      console.log("Record: ", record); // Logging the record")
-      console.log("Feature Extent:", featureExtent); // Logging the feature extent
       const sr = record.feature.geometry.spatialReference
-      console.log("Spatial Reference:", sr); // Logging the spatial reference
 
 
       // Ensure that the featureExtent is valid before proceeding
       if (featureExtent && featureExtent.xmin !== undefined && featureExtent.ymin !== undefined && featureExtent.xmax !== undefined && featureExtent.ymax !== undefined) {
 
         mapView.when(() => {
+
+          mapView.graphics.removeAll();
+
           const extXY = new Extent({
             xmin: featureExtent.xmin,
             ymin: featureExtent.ymin,
@@ -100,8 +187,52 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             ymax: featureExtent.ymax,
             spatialReference: sr
           });
-          mapView.goTo({ target: extXY.expand(1.33) }, { duration: 2000 });
+
+          const fillSymbol = new SimpleFillSymbol({
+            color: [0, 0, 0, 0],  // This creates a fully transparent fill (RGBA format where A is alpha/opacity)
+            style: "solid",  // Note that this is now valid for SimpleFillSymbol
+            outline: {
+              color: [0, 0, 255], // Blue color for the outline
+              width: 2  // Adjust width as needed
+            }
+          });
+
+          const graphic = new Graphic({
+            geometry: record.feature.geometry,
+            symbol: fillSymbol
+          });
+
+          mapView.graphics.add(graphic);
+
+          mapView.goTo({ target: extXY })
+            .then(() => {
+              return new Promise<void>(resolve => {
+                const handle = mapView.watch('updating', updating => {
+                  if (!updating) {
+                    handle.remove();
+                    resolve();
+                  }
+                });
+              });
+            })
+            .then(() => createMask(record.feature.geometry))
+            .then(() => filterPointsWithinPolygon(record.feature.geometry))
+            .then(() => waitForLayerViewUpdate())
+            .then(() => getPointsInsideFeature())
+            .then(pointsInsideFeature => {
+              console.log("Final points inside feature: ", pointsInsideFeature); // Here are the points inside the feature
+              return waitForLayerViewUpdate();
+            })
+            .then(() => handleScreenshot())
+
+            .then(dataUrl => {
+              setMapScreenshotData(dataUrl);
+            })
+            .catch(error => {
+              console.error("Error updating map view or capturing screenshot:", error);
+            });
         });
+
 
       } else {
         console.error("Invalid feature extent. Cannot zoom to feature extent.");
@@ -123,25 +254,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     tempLink.click();
   };
 
-  /**
-   * Get the bounding box of a polygon.
-   * @param {Array} rings - The rings of the polygon.
-   * @returns {Object} The bounding box coordinates.
-   */
-  const getBoundingBox = (rings) => {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    rings.forEach(ring => {
-      ring.forEach(point => {
-        const [x, y] = point;
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-      });
-    });
-    return { minX, minY, maxX, maxY };
-  };
-
   async function handleScreenshot() {
     const mapView = mapViewRef.current;
     const screenshotArea = {
@@ -150,7 +262,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       width: mapView.width,
       height: mapView.height
     };
-    console.log(mapView.height);
 
     const screenshot = await mapView.takeScreenshot({ format: 'png', area: screenshotArea, width: mapView.width * 10, height: mapView.height * 10 });
 
@@ -158,20 +269,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   }
 
   const featureName = selectedRecord?.feature.attributes?.name || "Unknown Name";
-  const geometry = selectedRecord?.feature.geometry;
 
   // 1. Setup the map and layers for the selected feature
   const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
-
-  console.log("Web Map:", webmap); // Logging the web map
 
   const [layer] = useState(new FeatureLayer({
     portalItem: {
       id: '306d4e5ec8294275982f3efb5a10916e'
     }
   }));
-
-  console.log("Feature Layer:", layer); // Logging the feature layer
 
   webmap.add(layer);
 
@@ -186,15 +292,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
       mapViewRef.current = mapView;
 
+      mapView.when(() => {
+        mapView.whenLayerView(layer).then(lv => {
+          layerView = lv;
+        });
+      });
+
       // Take a screenshot once the view is ready
       reactiveUtils.whenOnce(() => !mapView.updating).then(async () => {
         try {
-          console.log("Map View Zoom Before:", mapView.zoom); // Logging the map view
-
-          mapView.goTo({
-            target: mapView.center,
-            zoom: mapView.zoom + 5
-          });
 
           // Wait for the mapView to finish updating after the zoom operation
           await new Promise<void>(resolve => {
@@ -223,98 +329,132 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   }, [webmap, layer]);
 
 
-  /**
-  * Generate a PDF report from the selected feature layer record.
-  */
+  interface ImageDimensions {
+    width: number;
+    height: number;
+  }
+
+  const getImageDimensions = (base64String: string): Promise<ImageDimensions> => {
+    return new Promise((resolve, reject) => {
+      const img: HTMLImageElement = new Image();
+
+      img.onload = function (this: HTMLImageElement) {
+        resolve({ width: this.width, height: this.height });
+      };
+
+      img.onerror = function () {
+        reject(new Error("Failed to load image"));
+      };
+
+      img.src = base64String;
+    });
+  };
+
+
   const generateTestPDF = async () => {
+
+    let pointsInsideFeature;
+
+    try {
+      pointsInsideFeature = await getPointsInsideFeature();
+      console.log("Final points inside feature: ", pointsInsideFeature);
+    } catch (error) {
+      console.error("Error getting points inside feature:", error);
+      return; // Exit if there's an error
+    }
 
     // Create a canvas for the basemap and polygon
     const canvas = document.createElement('canvas');
-    const canvasWidth = 720;
-    const canvasHeight = 540;
+    const canvasWidth = 1920;
+    const canvasHeight = 1080;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
-    const ctx = canvas.getContext('2d');
 
-    // Calculate the zoom level based on the bounding box of the selected feature
-    const { minX, minY, maxX, maxY } = getBoundingBox(geometry.rings);
-    console.log("Bounding Box:", { minX, minY, maxX, maxY }); // Logging the bounding box
+    const dimensions = await getImageDimensions(mapScreenshotData);
+    const mapWidth = dimensions.width;
+    const mapHeight = dimensions.height;
 
-    // Convert Web Mercator to geographic coordinates
-    const geoMin = webMercatorUtils.xyToLngLat(minX, minY);
-    const geoMax = webMercatorUtils.xyToLngLat(maxX, maxY);
+    console.log("mapWidth:", mapWidth);
+    console.log("mapHeight:", mapHeight);
 
-    const geoBbox = {
-      minX: geoMin[0],
-      minY: geoMin[1],
-      maxX: geoMax[0],
-      maxY: geoMax[1]
-    };
+    // Calculate the image's height based on the original width-to-height ratio, considering new width.
+    const mapAspectRatio = mapHeight / mapWidth;
+    let imageWidth = (canvasWidth / 2) * .8;
+    let imageHeight = imageWidth * mapAspectRatio;
 
-    const basemapImgData = canvas.toDataURL('image/png');
+    // Ensure the image fits within the canvas height
+    if (imageHeight > canvasHeight) {
+      const scalingFactor = canvasHeight / imageHeight;
+      imageWidth *= scalingFactor;
+      imageHeight *= scalingFactor;
+    }
 
-    // Draw the selected feature's polygon on a new canvas
-    const polygonCanvas = document.createElement('canvas');
-    polygonCanvas.width = canvasWidth;
-    polygonCanvas.height = canvasHeight;
-    const polygonCtx = polygonCanvas.getContext('2d');
+    const topMargin = 127.5;
+    const sideMargin = ((canvasWidth / 2) - ((canvasWidth / 2) * .8)) / 2; // You can adjust this value to your liking
 
-    const polygonImgData = polygonCanvas.toDataURL('image/png');
+    console.log("Image Width:", imageWidth);
+    console.log("Image Height:", imageHeight);
+    console.log("Top Margin:", topMargin);
+    console.log("Side Margin:", sideMargin);
 
-    const slideContent = {
-      table: {
-        widths: ['*'],
-        heights: ['*'],
-        body: [
-          [
-            {
-              stack: [
-                {
-                  text: featureName,
-                  fontSize: 24,
-                  alignment: 'center',
-                  margin: [0, 0, 0, 20],
-                  fillColor: 'yellow',
-                },
-              ],
-              border: [true, true, true, true],
-              borderColor: ['red', 'red', 'red', 'red'],
-              fillColor: 'blue',
-            }
-          ]
-        ]
-      },
-      pageBreak: 'after'
-    };
+    const selectedFeatureName = featureName;
+    const averagePerSquareMile = "#";
 
-    // Update the docDefinition to include the basemap image and the polygon image
+    let statistics;
+
+    if (pointsInsideFeature === 1) {
+      statistics = [
+        { text: "Farmer's Markets", style: 'header', margin: [0, 0, 0, 40] },
+        { text: `${pointsInsideFeature} farmer’s market in ${selectedFeatureName}`, style: 'bodyText' },
+        { text: "1 farmer’s market for every [#] people", style: 'bodyText' },
+        { text: `${averagePerSquareMile} farmer’s markets every square mile`, style: 'bodyText' },
+      ];
+    } else {
+      statistics = [
+        { text: "Farmer's Markets", style: 'header', margin: [0, 0, 0, 40] },
+        { text: `${pointsInsideFeature} farmer’s markets in ${selectedFeatureName}`, style: 'bodyText' },
+        { text: "1 farmer’s market for every [#] people", style: 'bodyText' },
+        { text: `${averagePerSquareMile} farmer’s markets every square mile`, style: 'bodyText' },
+      ];
+    }
+
+
     const docDefinition = {
       content: [
-        slideContent,
         {
           table: {
             widths: ['50%', '50%'],
-            heights: [canvasHeight],
+            heights: [canvasHeight], // Set to canvasHeight to occupy full cell height
             body: [
-              ['', {
+              [{
+                stack: statistics,
+                alignment: 'center',
+                margin: [200, 200, 200, 200] // Adjusting to vertically center the text block
+              },
+              {
                 image: mapScreenshotData,
-                width: canvasWidth / 2,
-                height: canvasHeight / 2
+                width: imageWidth,
+                height: imageHeight,
+                margin: [sideMargin, topMargin, sideMargin, 0]  // [left, top, right, bottom]
               }]
             ]
           },
           layout: 'noBorders'
-        },
-        {
-          image: polygonImgData,
-          width: canvasWidth,
-          height: canvasHeight
         }
       ],
       pageSize: { width: canvasWidth, height: canvasHeight },
-      pageOrientation: 'landscape'
+      pageOrientation: 'landscape',
+      styles: {
+        header: {
+          fontSize: 96,
+          color: 'black'
+        },
+        bodyText: {
+          fontSize: 48,
+          color: 'black'
+        }
+      }
     };
-
 
     if (!selectedRecord || !selectedRecord.feature || !selectedRecord.feature.geometry) {
       console.error("Invalid record or geometry. Cannot generate PDF.");
@@ -334,7 +474,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     generateTestPDF();
   };
 
-  const dataRender = (ds: DataSource, info: IMDataSourceInfo) => {
+  const dataRender = (ds: DataSource) => {
     if (!ds) return null;
 
     dsRef.current = ds;
@@ -342,12 +482,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const newRecords = dsRef.current.getRecords();
     if (newRecords.length !== records.length) {
       setRecords(newRecords);
-    }
-
-    // Log the spatial reference of the first feature, if available
-    if (newRecords.length > 0 && newRecords[0].feature && newRecords[0].feature.geometry) {
-      console.log("Feature Layer Spatial Reference WKID:", newRecords[0].feature.geometry.spatialReference.wkid);
-      console.log("Feature Layer Spatial Reference WKT:", newRecords[0].feature.geometry.spatialReference.wkt);
     }
 
     const fName = props.useDataSources && props.useDataSources[0] && props.useDataSources[0].fields ? props.useDataSources[0].fields[0] : null;
@@ -424,7 +558,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     if (!isDsConfigured()) {
       return;
     }
-    const fieldName = props.useDataSources[0].fields[0];
     const w = '1=1';
     return {
       where: w,
