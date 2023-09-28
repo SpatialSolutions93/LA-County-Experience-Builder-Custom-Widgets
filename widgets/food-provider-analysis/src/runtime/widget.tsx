@@ -22,8 +22,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 const { useRef, useState } = React;
 
-let pointsInsideFeature;
-
 let layerView;
 
 const paneStyle: CSSProperties = {
@@ -273,60 +271,84 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   // 1. Setup the map and layers for the selected feature
   const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
 
+  console.log("WebMap Created", webmap);
+
   const [layer] = useState(new FeatureLayer({
     portalItem: {
       id: '306d4e5ec8294275982f3efb5a10916e'
     }
   }));
 
+  console.log("Layer Created", layer);
+
   webmap.add(layer);
+
+  console.log("Layer Added", layer);
+
+  console.log("mapView Ref Current", mapViewRef.current)
 
   const [mapScreenshotData, setMapScreenshotData] = useState(null);
   React.useEffect(() => {
-    if (mapViewRef.current) {
-      webmap.add(layer);
-      const mapView = new MapView({
-        container: mapViewRef.current,
-        map: webmap
-      });
+    const intervalId = setInterval(() => {
+      if (mapViewRef.current) {
+        clearInterval(intervalId); // Stop the interval once mapViewRef.current exists
 
-      mapViewRef.current = mapView;
-
-      mapView.when(() => {
-        mapView.whenLayerView(layer).then(lv => {
-          layerView = lv;
+        webmap.add(layer);
+        const mapView = new MapView({
+          container: mapViewRef.current,
+          map: webmap
         });
-      });
 
-      // Take a screenshot once the view is ready
-      reactiveUtils.whenOnce(() => !mapView.updating).then(async () => {
-        try {
+        console.log("MapView created");
 
-          // Wait for the mapView to finish updating after the zoom operation
-          await new Promise<void>(resolve => {
+        mapViewRef.current = mapView;
 
-            const handle = mapView.watch('updating', updating => {
-              if (!updating) {
-                handle.remove();
-                resolve();
-              }
-            });
+        mapView.when(() => {
+          mapView.whenLayerView(layer).then(lv => {
+            layerView = lv;
           });
+        });
 
-          const screenshotDataUrl = await handleScreenshot();
-          setMapScreenshotData(screenshotDataUrl);
-        } catch (error) {
-          console.error("Failed to capture screenshot:", error);
-        }
-      });
+        console.log("MapView ready");
 
-      return () => {
-        if (mapView) {
-          mapView.destroy();
-        }
-      };
-    }
+        // Take a screenshot once the view is ready
+        reactiveUtils.whenOnce(() => !mapView.updating).then(async () => {
+          try {
+
+            // Wait for the mapView to finish updating after the zoom operation
+            await new Promise<void>(resolve => {
+
+              console.log("MapView started updating");
+
+              const handle = mapView.watch('updating', updating => {
+                if (!updating) {
+                  handle.remove();
+                  resolve();
+                }
+              });
+            });
+
+            console.log("MapView finished updating");
+
+            const screenshotDataUrl = await handleScreenshot();
+            setMapScreenshotData(screenshotDataUrl);
+          } catch (error) {
+            console.error("Failed to capture screenshot:", error);
+          }
+        });
+      }
+    }, 500); // Check every 500ms
+
+    return () => {
+      clearInterval(intervalId); // Cleanup: ensure the interval is cleared when the component unmounts
+
+      if (mapViewRef.current) {
+        mapViewRef.current.destroy();
+        console.log("MapView destroyed");
+      }
+    };
   }, [webmap, layer]);
+
 
 
   interface ImageDimensions {
@@ -389,7 +411,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       imageHeight *= scalingFactor;
     }
 
-    const topMargin = 127.5;
+    const topMargin = 220;
     const sideMargin = ((canvasWidth / 2) - ((canvasWidth / 2) * .8)) / 2; // You can adjust this value to your liking
 
     console.log("Image Width:", imageWidth);
@@ -418,30 +440,49 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       ];
     }
 
-
     const docDefinition = {
+      // Background definition for the red rectangle
+      background: function (currentPage, pageSize) {
+        if (currentPage === 1) { // Only apply for the first page
+          return {
+            canvas: [{
+              type: 'rect',
+              x: pageSize.width - 200,  // Starting from the far right side
+              y: 0,
+              w: 200,
+              h: pageSize.height,
+              color: '#990000'
+            }]
+          };
+        }
+        return null; // No background for other pages
+      },
+
       content: [
         {
           table: {
             widths: ['50%', '50%'],
-            heights: [canvasHeight], // Set to canvasHeight to occupy full cell height
+            heights: [canvasHeight],
             body: [
-              [{
-                stack: statistics,
-                alignment: 'center',
-                margin: [200, 200, 200, 200] // Adjusting to vertically center the text block
-              },
-              {
-                image: mapScreenshotData,
-                width: imageWidth,
-                height: imageHeight,
-                margin: [sideMargin, topMargin, sideMargin, 0]  // [left, top, right, bottom]
-              }]
+              [
+                {
+                  stack: statistics,
+                  alignment: 'center',
+                  margin: [0, 320]
+                },
+                {
+                  image: mapScreenshotData,
+                  width: imageWidth,
+                  height: imageHeight,
+                  margin: [sideMargin, topMargin, sideMargin, 0]  // [left, top, right, bottom]
+                }
+              ]
             ]
           },
           layout: 'noBorders'
         }
       ],
+
       pageSize: { width: canvasWidth, height: canvasHeight },
       pageOrientation: 'landscape',
       styles: {
@@ -455,6 +496,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
       }
     };
+
 
     if (!selectedRecord || !selectedRecord.feature || !selectedRecord.feature.geometry) {
       console.error("Invalid record or geometry. Cannot generate PDF.");
