@@ -16,6 +16,7 @@ import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import Polygon from "@arcgis/core/geometry/Polygon";
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import './widgetStyles.css';
+import "react-pdf/dist/esm/Page/TextLayer.css";
 
 // Set the worker source for pdfjs.
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
@@ -24,14 +25,45 @@ const { useRef, useState } = React;
 
 let layerView;
 
-const paneStyle: CSSProperties = {
+const mapStyle: CSSProperties = {
   position: 'absolute',
   top: '20%',
   width: '100%',
   height: '100%',
   backgroundColor: 'white',
   border: '1px solid black',
-  //visibility: 'hidden' UPDATE UPDATE ENABLE IN FINAL DEPLOYMENT
+  visibility: 'hidden'
+};
+
+const reportButtonStyle: CSSProperties = {
+  position: 'absolute',
+  top: '15.7%',
+  left: '1.5%',
+  zIndex: 2000,
+  boxShadow: 'rgba(0, 0, 0, 0.2) 0px 1px 2px 0px',
+};
+
+const reportFormStyle: CSSProperties = {
+  width: 'calc(100% - 300px)', // reducing width by 40px for a 20px margin on each side
+  margin: '0 150px',
+  marginTop: '20px',
+  height: 'auto)',
+  overflow: 'auto',
+  visibility: 'hidden',
+  backgroundColor: 'white',
+  border: '1px solid black',
+  padding: '20px', // added padding inside for spacing
+  boxSizing: 'border-box', // to ensure padding and border are included in the width
+};
+
+const dropdownStyle: CSSProperties = {
+  width: '100%', // dropdown takes the full width of the parent
+  padding: '8px', // added padding for better appearance
+  marginBottom: '20px', // space between dropdowns and their labels
+  border: '1px solid #ccc', // grayish border for dropdown
+  borderRadius: '4px', // slightly rounded corners
+  fontSize: '16px', // size of the font in the dropdown
+  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // subtle shadow for depth
 };
 
 // Set up the virtual file system for pdfMake.
@@ -47,10 +79,33 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const mapViewRef = useRef(null);
   const [pdfBlob, setPdfBlob] = useState(null);
   const [numPages, setNumPages] = useState(null);
-  const [records, setRecords] = useState([]);
+  const [neighborhoodList, setNeighborhoodList] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [showPDFPane, setShowPDFPane] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState(null);
+  const [pdfGenerationComplete, setPdfGenerationComplete] = useState(false);
+
+  const [farmersMarkets] = useState(new FeatureLayer({
+    portalItem: {
+      id: '306d4e5ec8294275982f3efb5a10916e'
+    }
+  }));
+
+  const [neighborhoods] = useState(new FeatureLayer({
+    portalItem: {
+      id: 'd6c55385a0e749519f238b77135eafac'
+    }
+  }));
+
+  React.useEffect(() => {
+    neighborhoods.queryFeatures().then((featureSet) => {
+      console.log("First Feature: ", featureSet.features[0].geometry.toJSON());
+      setNeighborhoodList(featureSet.features);
+    });
+  }, [neighborhoods]);
+
 
   /**
    * Handler for document load success event.
@@ -160,85 +215,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
    * @param {Event} event - The event object.
    */
   const handleDropdownChange = (event) => {
-    const mapView = mapViewRef.current;
     const selectedIndex = event.target.value;
-    const record = records[selectedIndex];
+    console.log("Selected Index:", selectedIndex);
+    const record = neighborhoodList[selectedIndex];
+
+    console.log("Selected Record:", record);
     setSelectedRecord(record);
-
-    // Zoom to the feature's extent
-    if (record && record.feature && record.feature.geometry) {
-      const featureExtent = record.feature.geometry.extent;
-      const sr = record.feature.geometry.spatialReference
-
-
-      // Ensure that the featureExtent is valid before proceeding
-      if (featureExtent && featureExtent.xmin !== undefined && featureExtent.ymin !== undefined && featureExtent.xmax !== undefined && featureExtent.ymax !== undefined) {
-
-        mapView.when(() => {
-
-          mapView.graphics.removeAll();
-
-          const extXY = new Extent({
-            xmin: featureExtent.xmin,
-            ymin: featureExtent.ymin,
-            xmax: featureExtent.xmax,
-            ymax: featureExtent.ymax,
-            spatialReference: sr
-          });
-
-          const fillSymbol = new SimpleFillSymbol({
-            color: [0, 0, 0, 0],  // This creates a fully transparent fill (RGBA format where A is alpha/opacity)
-            style: "solid",  // Note that this is now valid for SimpleFillSymbol
-            outline: {
-              color: [0, 0, 255], // Blue color for the outline
-              width: 2  // Adjust width as needed
-            }
-          });
-
-          const graphic = new Graphic({
-            geometry: record.feature.geometry,
-            symbol: fillSymbol
-          });
-
-          mapView.graphics.add(graphic);
-
-          mapView.goTo({ target: extXY })
-            .then(() => {
-              return new Promise<void>(resolve => {
-                const handle = mapView.watch('updating', updating => {
-                  if (!updating) {
-                    handle.remove();
-                    resolve();
-                  }
-                });
-              });
-            })
-            .then(() => createMask(record.feature.geometry))
-            .then(() => filterPointsWithinPolygon(record.feature.geometry))
-            .then(() => waitForLayerViewUpdate())
-            .then(() => getPointsInsideFeature())
-            .then(pointsInsideFeature => {
-              console.log("Final points inside feature: ", pointsInsideFeature); // Here are the points inside the feature
-              return waitForLayerViewUpdate();
-            })
-            .then(() => handleScreenshot())
-
-            .then(dataUrl => {
-              setMapScreenshotData(dataUrl);
-            })
-            .catch(error => {
-              console.error("Error updating map view or capturing screenshot:", error);
-            });
-        });
-
-
-      } else {
-        console.error("Invalid feature extent. Cannot zoom to feature extent.");
-      }
-    }
-    else {
-      console.error("Invalid record or geometry. Cannot zoom to feature extent.");
-    }
+    console.log("Selected Record Geometry:", record.geometry);
+    console.log("Full Record Structure:", JSON.stringify(record, null, 2));
   };
 
   /**
@@ -266,24 +250,18 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     return screenshot.dataUrl;
   }
 
-  const featureName = selectedRecord?.feature.attributes?.name || "Unknown Name";
+  const featureName = selectedRecord?.attributes?.name || "Unknown Name";
 
   // 1. Setup the map and layers for the selected feature
   const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
 
   console.log("WebMap Created", webmap);
 
-  const [layer] = useState(new FeatureLayer({
-    portalItem: {
-      id: '306d4e5ec8294275982f3efb5a10916e'
-    }
-  }));
+  console.log("Layer Created", farmersMarkets);
 
-  console.log("Layer Created", layer);
+  webmap.add(farmersMarkets);
 
-  webmap.add(layer);
-
-  console.log("Layer Added", layer);
+  console.log("Layer Added", farmersMarkets);
 
   console.log("mapView Ref Current", mapViewRef.current)
 
@@ -293,7 +271,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       if (mapViewRef.current) {
         clearInterval(intervalId); // Stop the interval once mapViewRef.current exists
 
-        webmap.add(layer);
+        webmap.add(farmersMarkets);
         const mapView = new MapView({
           container: mapViewRef.current,
           map: webmap
@@ -304,7 +282,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         mapViewRef.current = mapView;
 
         mapView.when(() => {
-          mapView.whenLayerView(layer).then(lv => {
+          mapView.whenLayerView(farmersMarkets).then(lv => {
             layerView = lv;
           });
         });
@@ -347,9 +325,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         console.log("MapView destroyed");
       }
     };
-  }, [webmap, layer]);
-
-
+  }, [webmap, farmersMarkets]);
 
   interface ImageDimensions {
     width: number;
@@ -373,7 +349,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   };
 
 
-  const generateTestPDF = async () => {
+  const generateTestPDF = async (imageDimensions) => {
 
     let pointsInsideFeature;
 
@@ -391,10 +367,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const canvasHeight = 1080;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
-
-    const dimensions = await getImageDimensions(mapScreenshotData);
-    const mapWidth = dimensions.width;
-    const mapHeight = dimensions.height;
+    const mapWidth = imageDimensions.width;
+    const mapHeight = imageDimensions.height;
 
     console.log("mapWidth:", mapWidth);
     console.log("mapHeight:", mapHeight);
@@ -411,18 +385,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       imageHeight *= scalingFactor;
     }
 
-    const topMargin = 220;
-    const sideMargin = ((canvasWidth / 2) - ((canvasWidth / 2) * .8)) / 2; // You can adjust this value to your liking
-
-    console.log("Image Width:", imageWidth);
-    console.log("Image Height:", imageHeight);
-    console.log("Top Margin:", topMargin);
-    console.log("Side Margin:", sideMargin);
 
     const selectedFeatureName = featureName;
     const averagePerSquareMile = "#";
 
     let statistics;
+
+    let title_page;
 
     const bullet = '\u2022'; // Unicode bullet point
 
@@ -521,6 +490,50 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       ];
     }
 
+    title_page = [
+      {
+        stack: [
+          {
+            columns: [
+              {}, // Empty column for padding on the left side
+              {
+                text: `Food Availability in ${selectedFeatureName}`,
+                style: 'title_main',
+                width: canvasWidth * 0.75, // 75% of the canvas width
+                alignment: 'center'
+              },
+              {} // Empty column for padding on the right side
+            ],
+            // Add these if you want to balance out the space distributed to each column
+            columnGap: 0,
+            widths: ['12.5%', '75%', '12.5%']
+          },
+          {
+            text: `Generated on ${new Date().toLocaleDateString()}`, // This will display the current date
+            style: 'date_style',
+            margin: [0, 0]
+          }
+        ],
+        margin: [0, -150]
+      },
+      {
+        columns: [
+          {
+            image: LACounty_logo,
+            height: 400,
+            width: 400,
+            absolutePosition: { x: 368, y: 610 }
+          },
+          {
+            image: USC_logo,
+            height: 240,
+            width: 584,
+            absolutePosition: { x: 1056, y: 708 }
+          }
+        ]
+      }
+    ];
+
     const overlap = 10;  // Set the thickness of your outline
 
     const verticalMargin = ((canvasHeight - imageHeight) / 2) / 2;
@@ -532,6 +545,32 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       // Background definition for the red rectangle and black outline
       background: function (currentPage, pageSize) {
         if (currentPage === 1) {
+          // Return the rectangles for the first slide's background
+          return {
+            canvas: [
+              // Outer rectangle with color #990000
+              {
+                type: 'rect',
+                x: (canvasWidth - (canvasWidth - 80)) / 2,
+                y: (canvasHeight - (canvasHeight - 80)) / 2,
+                w: canvasWidth - 80,
+                h: canvasHeight - 80,
+                lineWidth: 5,
+                lineColor: '#990000'
+              },
+              // Inner rectangle with color #FFCC00
+              {
+                type: 'rect',
+                x: (canvasWidth - (canvasWidth - 90)) / 2,
+                y: (canvasHeight - (canvasHeight - 90)) / 2,
+                w: canvasWidth - 90,
+                h: canvasHeight - 90,
+                lineWidth: 5,
+                lineColor: '#FFCC00'
+              }
+            ]
+          };
+        } else if (currentPage > 1) {
           return {
             canvas: [
               // Red rectangle
@@ -560,7 +599,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 x: pageSize.width - imageWidth - 2 * overlap - 110,
                 y: ((canvasHeight - imageHeight) / 2) - overlap + 10,
                 w: imageWidth - 2,
-                h: imageHeight - 2,
+                h: imageHeight - 1,
                 lineWidth: overlap,
                 lineColor: 'black'
               }
@@ -568,32 +607,58 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           };
         }
         return null;
-      }
-      ,
+      },
 
       content: [
+        // Content for the first slide
         {
-          table: {
-            widths: ['50%', '60%'],
-            heights: [canvasHeight],
-            body: [
-              [
-                {
-                  stack: statistics,
-                  margin: [65, 320]
-                },
-                {
-                  image: mapScreenshotData,
-                  width: imageWidth,
-                  height: imageHeight,
-                  margin: [horizontalMargin - 183, (((canvasHeight - imageHeight) / 2) / 2) + 31]  // Only left and top margins needed
-                }
-              ]
-            ]
-          },
-          layout: 'noBorders'
+          stack: [
+            {
+              table: {
+                widths: ['100%'],
+                heights: [canvasHeight],
+                body: [  // Fixed here
+                  [
+                    {
+                      stack: title_page,
+                      margin: [65, 320]
+                    }
+                  ]
+                ]
+              },
+              layout: 'noBorders'
+            }
+          ],
+          pageBreak: 'after'  // Moved inside the slide's definition
+        },
+        // Content for the second slide
+        {
+          stack: [
+            {
+              table: {
+                widths: ['50%', '60%'],
+                heights: [canvasHeight],
+                body: [
+                  [
+                    {
+                      stack: statistics,
+                      margin: [65, 320]
+                    },
+                    {
+                      image: mapScreenshotData,
+                      width: imageWidth,
+                      height: imageHeight,
+                      margin: [horizontalMargin - 183, (((canvasHeight - imageHeight) / 2) / 2) + 51]
+                    }
+                  ]
+                ]
+              },
+              layout: 'noBorders'
+            }
+          ]
         }
-      ],
+      ]
+      ,
 
       pageSize: { width: canvasWidth, height: canvasHeight },
       pageOrientation: 'landscape',
@@ -606,13 +671,22 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         bodyText: {
           fontSize: 43,
           color: 'black'
+        },
+        title_main: {
+          fontSize: 116,
+          color: 'black',
+          bold: true,
+          alignment: 'center'
+        },
+        date_style: {
+          fontSize: 43,
+          color: 'black',
+          alignment: 'center'
         }
       }
     };
 
-
-
-    if (!selectedRecord || !selectedRecord.feature || !selectedRecord.feature.geometry) {
+    if (!selectedRecord || !selectedRecord || !selectedRecord.geometry) {
       console.error("Invalid record or geometry. Cannot generate PDF.");
       return;
     }
@@ -627,36 +701,166 @@ export default function Widget(props: AllWidgetProps<unknown>) {
    * Handle the click event to generate the PDF report.
    */
   const handleReportClick = () => {
-    generateTestPDF();
+    setShowPDFPane(true);
+    setPdfGenerationComplete(false);
+    setIsLoadingReport(true);
+
+    const mapView = mapViewRef.current;
+    const record = selectedRecord;
+
+    if (!record || !record.geometry) {
+      console.error("Invalid record or geometry. Cannot generate report.");
+      setIsLoadingReport(false);
+      return;
+    }
+
+    // Zoom to the feature's extent
+    const featureExtent = record.geometry.extent;
+    const sr = record.geometry.spatialReference;
+
+    // Ensure that the featureExtent is valid before proceeding
+    if (featureExtent && featureExtent.xmin !== undefined && featureExtent.ymin !== undefined && featureExtent.xmax !== undefined && featureExtent.ymax !== undefined) {
+      mapView.when(() => {
+        mapView.graphics.removeAll();
+
+        const extXY = new Extent({
+          xmin: featureExtent.xmin,
+          ymin: featureExtent.ymin,
+          xmax: featureExtent.xmax,
+          ymax: featureExtent.ymax,
+          spatialReference: sr
+        });
+
+        const fillSymbol = new SimpleFillSymbol({
+          color: [0, 0, 0, 0],  // This creates a fully transparent fill
+          style: "solid",
+          outline: {
+            color: [0, 0, 255], // Blue color for the outline
+            width: 2  // Adjust width as needed
+          }
+        });
+
+        const graphic = new Graphic({
+          geometry: record.geometry,
+          symbol: fillSymbol
+        });
+
+        mapView.graphics.add(graphic);
+
+        mapView.goTo({ target: extXY })
+          .then(() => {
+            return new Promise<void>(resolve => {
+              const handle = mapView.watch('updating', updating => {
+                if (!updating) {
+                  handle.remove();
+                  resolve();
+                }
+              });
+            });
+          })
+          .then(() => createMask(record.geometry))
+          .then(() => filterPointsWithinPolygon(record.geometry))
+          .then(() => waitForLayerViewUpdate())
+          .then(() => getPointsInsideFeature())
+          .then(pointsInsideFeature => {
+            console.log("Final points inside feature: ", pointsInsideFeature);
+            return waitForLayerViewUpdate();
+          })
+          .then(() => handleScreenshot())
+          .then(async (dataUrl) => {
+            setMapScreenshotData(dataUrl);
+
+            // Here's where you get the image dimensions:
+            try {
+              console.log("Data URL:", dataUrl);
+
+              const dimensions = await getImageDimensions(dataUrl);
+              setImageDimensions(dimensions);
+              console.log("Image Dimensions:", dimensions);
+
+            } catch (error) {
+              console.error("Error getting image dimensions:", error);
+            }
+
+
+          })
+          .catch(error => {
+            console.error("Error updating map view or capturing screenshot:", error);
+          });
+      });
+    } else {
+      console.error("Invalid feature extent. Cannot generate report.");
+      setIsLoadingReport(false);
+    }
   };
+
+  React.useEffect(() => {
+    if (imageDimensions) {
+      generateTestPDF(imageDimensions).then(() => {
+        setPdfGenerationComplete(true);
+        setIsLoadingReport(false);
+      });
+    }
+  }, [imageDimensions]);
 
   const dataRender = (ds: DataSource) => {
     if (!ds) return null;
 
     dsRef.current = ds;
 
-    const newRecords = dsRef.current.getRecords();
-    if (newRecords.length !== records.length) {
-      setRecords(newRecords);
-    }
-
     const fName = props.useDataSources && props.useDataSources[0] && props.useDataSources[0].fields ? props.useDataSources[0].fields[0] : null;
 
     return (
       <>
-        <div style={paneStyle} ref={mapViewRef}>
+        <div style={reportButtonStyle}>
+          <button
+            className="esri-widget--button border-0 select-tool-btn d-flex align-items-center justify-content-center"
+            onClick={() => {
+              const reportForm = document.getElementById("reportForm");
+              if (reportForm) {
+                if (reportForm.style.visibility === "hidden" || reportForm.style.visibility === "") {
+                  reportForm.style.visibility = "visible";
+                } else {
+                  reportForm.style.visibility = "hidden";
+                }
+              }
+            }}
+          >
+            <span className="esri-icon esri-icon-media2"></span>
+          </button>
         </div>
-        <div className="record-list" style={{ width: '100%', marginTop: '20px', height: 'calc(100% - 80px)', overflow: 'auto' }}>
-          <select onChange={handleDropdownChange}>
+
+        <div style={mapStyle} ref={mapViewRef}>
+        </div>
+        <div className="record-list" id="reportForm" style={reportFormStyle}>
+          <label style={{ display: 'block', marginBottom: '10px' }}>Please select your boundary type:</label>
+          <select /*onChange={handleBoundaryTypeChange}*/ style={dropdownStyle}>
+            <option value="" disabled selected>Select a boundary type</option>
+            <option value="City">City</option>
+            <option value="Countywide Statistical Area (CSA)">Countywide Statistical Area (CSA)</option>
+            <option value="Census Tract">Census Tract</option>
+            <option value="LA City Council districts">LA City Council districts</option>
+            <option value="Neighborhood">Neighborhood</option>
+            <option value="Service Planning Area (SPA)">Service Planning Area (SPA)</option>
+            <option value="Supervisor District">Supervisor District</option>
+          </select>
+
+          <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>Please choose your boundary:</label>
+          <select onChange={handleDropdownChange} style={dropdownStyle}>
             <option value="" disabled selected>Select a record</option>
-            {records.map((record, i) => (
+            {neighborhoodList.map((record, i) => (
               <option key={i} value={i}>
-                {record.getData()[fName] || "Unnamed"}
+                {record.attributes['name'] || "Unnamed"}
               </option>
             ))}
+
           </select>
-          <button onClick={handleReportClick}>View Report</button>
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+            <button onClick={handleReportClick}>View Report</button>
+          </div>
         </div>
+
         {showPDFPane && (
           <div className="pdf-pane" style={{
             position: 'fixed',
@@ -672,33 +876,50 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             alignItems: 'center',
             border: '1px solid black',
           }}>
-            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <button onClick={handleZoomIn} style={{ margin: '10px' }}>+</button>
-                <button onClick={handleZoomOut} style={{ margin: '10px' }}>-</button>
+            {isLoadingReport ? (
+              // Loading UI
+              <div className="loading-container" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                height: '100%'
+              }}>
+                <div className="spinner"></div>
+                <p>Loading Report...</p>
               </div>
-              <button onClick={handleDownload} style={{ margin: '10px' }}>Download PDF</button>
-              <button onClick={() => setShowPDFPane(false)} style={{ margin: '10px' }}>Close</button>
-            </div>
-            <div style={{ width: '90%', height: '80%', overflow: 'auto' }}>
-              <Document
-                file={pdfBlob}
-                onLoadSuccess={onDocumentLoadSuccess}
-              >
-                {Array.from(
-                  new Array(numPages),
-                  (el, index) => (
-                    <Page
-                      key={`page_${index + 1}`}
-                      pageNumber={index + 1}
-                      width={(window.innerWidth * 0.5 * zoomLevel) - 40}
-                    />
-                  ),
-                )}
-              </Document>
-            </div>
+            ) : (
+              // PDF Display
+              <>
+                <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <button onClick={handleZoomOut} style={{ margin: '10px' }}>-</button>
+                    <button onClick={handleZoomIn} style={{ margin: '10px' }}>+</button>
+                  </div>
+                  <button onClick={handleDownload} style={{ margin: '10px' }}>Download PDF</button>
+                  <button onClick={() => setShowPDFPane(false)} style={{ margin: '10px' }}>Close</button>
+                </div>
+                <div style={{ width: '90%', height: '80%', overflow: 'auto' }}>
+                  <Document
+                    file={pdfBlob}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                  >
+                    {Array.from(
+                      new Array(numPages),
+                      (el, index) => (
+                        <Page
+                          key={`page_${index + 1}`}
+                          pageNumber={index + 1}
+                          width={(window.innerWidth * 0.5 * zoomLevel) - 150}
+                        />
+                      ),
+                    )}
+                  </Document>
+                </div>
+              </>
+            )}
           </div>
         )}
+
       </>
     );
   };
