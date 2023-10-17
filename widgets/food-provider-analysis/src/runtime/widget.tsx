@@ -80,12 +80,48 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [pdfBlob, setPdfBlob] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [neighborhoodList, setNeighborhoodList] = useState([]);
+  const [cityList, setCityList] = useState([]);
+  const [CSAList, setCSAList] = useState([]);
+  const [censusTractList, setCensusTractList] = useState([]);
+  const [cityCouncilDistrictsList, setCityCouncilDistrictsList] = useState([]);
+  const [servicePlanningAreaList, setServicePlanningAreaList] = useState([]);
+  const [supervisorDistrictList, setSupervisorDistrictList] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [showPDFPane, setShowPDFPane] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [imageDimensions, setImageDimensions] = useState(null);
   const [pdfGenerationComplete, setPdfGenerationComplete] = useState(false);
+  const [boundaryType, setBoundaryType] = useState<string | null>(null);
+  const [selectedDatasets, setSelectedDatasets] = useState([]);
+
+  const datasets = [
+    { id: 1, name: "CalFresh Food Retailer" },
+    { id: 2, name: "CalFresh Gap" },
+    { id: 3, name: "CalFresh Restaurant" },
+    { id: 4, name: "Community Gardens" },
+    { id: 5, name: "EBT Stores and Market" },
+    { id: 6, name: "Farmer's Markets" },
+    { id: 7, name: "Food Desert Neighborhoods" },
+    { id: 8, name: "Food Pantry" },
+    { id: 9, name: "Parks" },
+    { id: 10, name: "Parks and Gardens" },
+    { id: 11, name: "Public Elementary Schools" },
+    { id: 12, name: "Public High Schools" },
+    { id: 13, name: "Public Middle Schools" },
+    { id: 14, name: "Restaurants" },
+    { id: 15, name: "Retail Food Markets" },
+    { id: 16, name: "Supermarkets and Grocery Stores" },
+    { id: 17, name: "WIC Food Retailer" },
+  ];
+
+  const handleDatasetChange = (datasetId) => {
+    if (selectedDatasets.includes(datasetId)) {
+      setSelectedDatasets(prev => prev.filter(id => id !== datasetId));
+    } else {
+      setSelectedDatasets(prev => [...prev, datasetId]);
+    }
+  };
 
   const [farmersMarkets] = useState(new FeatureLayer({
     portalItem: {
@@ -99,12 +135,68 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
   }));
 
+  const [cities] = useState(new FeatureLayer({
+    url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/19'
+  }));
+
+  const [CSA] = useState(new FeatureLayer({
+    url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/23'
+  }));
+
+  const [censusTracts] = useState(new FeatureLayer({
+    url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Demographics/MapServer/14'
+  }));
+
+  const [LACityCouncilDistricts] = useState(new FeatureLayer({
+    url: 'https://maps.lacity.org/lahub/rest/services/Boundaries/MapServer/13'
+  }));
+
+  const [servicePlanningAreas] = useState(new FeatureLayer({
+    url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Administrative_Boundaries/MapServer/23'
+  }));
+
+  const [supervisorDistricts] = useState(new FeatureLayer({
+    url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/27'
+  }));
+
   React.useEffect(() => {
-    neighborhoods.queryFeatures().then((featureSet) => {
-      console.log("First Feature: ", featureSet.features[0].geometry.toJSON());
-      setNeighborhoodList(featureSet.features);
-    });
-  }, [neighborhoods]);
+    const sortByAttribute = (features, attribute) => {
+      return features.sort((a, b) => a.attributes[attribute].localeCompare(b.attributes[attribute]));
+    };
+
+    if (boundaryType === "Neighborhood") {
+      neighborhoods.queryFeatures().then(featureSet => {
+        setNeighborhoodList(sortByAttribute(featureSet.features, 'name'));
+      });
+    } else if (boundaryType === "City") {
+      cities.queryFeatures().then(featureSet => {
+        setCityList(sortByAttribute(featureSet.features, 'CITY_NAME'));
+      });
+    } else if (boundaryType === "Census Tract") {
+      censusTracts.queryFeatures().then(featureSet => {
+        setCensusTractList(sortByAttribute(featureSet.features, 'CT20'));
+      });
+    } else if (boundaryType === "LA City Council Districts") {
+      LACityCouncilDistricts.queryFeatures().then(featureSet => {
+        setCityCouncilDistrictsList(sortByAttribute(featureSet.features, 'NAME'));
+      });
+    } else if (boundaryType === "Service Planning Area (SPA)") {
+      servicePlanningAreas.queryFeatures().then(featureSet => {
+        setServicePlanningAreaList(sortByAttribute(featureSet.features, 'SPA_NAME'));
+      });
+    } else if (boundaryType === "Supervisor District") {
+      supervisorDistricts.queryFeatures().then(featureSet => {
+        setSupervisorDistrictList(sortByAttribute(featureSet.features, 'LABEL'));
+      });
+    }
+    else if (boundaryType === "Countywide Statistical Area (CSA)") {
+      CSA.queryFeatures().then(featureSet => {
+        setCSAList(sortByAttribute(featureSet.features, 'LABEL'));
+      });
+    }
+
+  }, [boundaryType, neighborhoods, cities, censusTracts, LACityCouncilDistricts, servicePlanningAreas, supervisorDistricts, CSA]);
+
 
 
   /**
@@ -216,13 +308,30 @@ export default function Widget(props: AllWidgetProps<unknown>) {
    */
   const handleDropdownChange = (event) => {
     const selectedIndex = event.target.value;
-    console.log("Selected Index:", selectedIndex);
-    const record = neighborhoodList[selectedIndex];
 
-    console.log("Selected Record:", record);
-    setSelectedRecord(record);
-    console.log("Selected Record Geometry:", record.geometry);
-    console.log("Full Record Structure:", JSON.stringify(record, null, 2));
+    let record;
+    if (boundaryType === "Neighborhood") {
+      record = neighborhoodList[selectedIndex];
+    } else if (boundaryType === "City") {
+      record = cityList[selectedIndex];
+    } else if (boundaryType === "Census Tract") {
+      record = censusTractList[selectedIndex];
+    } else if (boundaryType === "LA City Council Districts") {
+      record = cityCouncilDistrictsList[selectedIndex];
+    } else if (boundaryType === "Service Planning Area (SPA)") {
+      record = servicePlanningAreaList[selectedIndex];
+    } else if (boundaryType === "Supervisor District") {
+      record = supervisorDistrictList[selectedIndex];
+    }
+    else if (boundaryType === "Countywide Statistical Area (CSA)") {
+      record = CSAList[selectedIndex];
+    }
+
+    if (record) {
+      setSelectedRecord(record);
+      console.log("Selected Record Geometry:", record.geometry);
+      console.log("Full Record Structure:", JSON.stringify(record, null, 2));
+    }
   };
 
   /**
@@ -250,7 +359,18 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     return screenshot.dataUrl;
   }
 
-  const featureName = selectedRecord?.attributes?.name || "Unknown Name";
+  const ATTRIBUTE_MAP = {
+    "Neighborhood": "name",
+    "City": "CITY_NAME",
+    "Countywide Statistical Area (CSA)": "LABEL",
+    "Census Tract": "CT20",
+    "LA City Council Districts": "NAME",
+    "Service Planning Area (SPA)": "SPA_NAME",
+    "Supervisor District": "LABEL",
+  };
+
+  const attributeKey = ATTRIBUTE_MAP[boundaryType];
+  const featureName = selectedRecord?.attributes?.[attributeKey] || "Unknown Name";
 
   // 1. Setup the map and layers for the selected feature
   const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
@@ -834,12 +954,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         </div>
         <div className="record-list" id="reportForm" style={reportFormStyle}>
           <label style={{ display: 'block', marginBottom: '10px' }}>Please select your boundary type:</label>
-          <select /*onChange={handleBoundaryTypeChange}*/ style={dropdownStyle}>
+          <select
+            onChange={(event) => setBoundaryType(event.target.value)}
+            style={dropdownStyle}
+          >
             <option value="" disabled selected>Select a boundary type</option>
             <option value="City">City</option>
             <option value="Countywide Statistical Area (CSA)">Countywide Statistical Area (CSA)</option>
             <option value="Census Tract">Census Tract</option>
-            <option value="LA City Council districts">LA City Council districts</option>
+            <option value="LA City Council Districts">LA City Council Districts</option>
             <option value="Neighborhood">Neighborhood</option>
             <option value="Service Planning Area (SPA)">Service Planning Area (SPA)</option>
             <option value="Supervisor District">Supervisor District</option>
@@ -848,13 +971,67 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>Please choose your boundary:</label>
           <select onChange={handleDropdownChange} style={dropdownStyle}>
             <option value="" disabled selected>Select a record</option>
-            {neighborhoodList.map((record, i) => (
+
+            {boundaryType === "Neighborhood" && neighborhoodList.map((record, i) => (
               <option key={i} value={i}>
                 {record.attributes['name'] || "Unnamed"}
               </option>
             ))}
 
+            {boundaryType === "City" && cityList.map((record, i) => (
+              <option key={i} value={i}>
+                {record.attributes['CITY_NAME'] || "Unnamed"}
+              </option>
+            ))}
+
+            {boundaryType === "Countywide Statistical Area (CSA)" && CSAList.map((record, i) => (
+              <option key={i} value={i}>
+                {record.attributes['LABEL'] || "Unnamed"}
+              </option>
+            ))}
+
+            {boundaryType === "Census Tract" && censusTractList.map((record, i) => (
+              <option key={i} value={i}>
+                {record.attributes['CT20'] || "Unnamed"}
+              </option>
+            ))}
+
+            {boundaryType === "LA City Council Districts" && cityCouncilDistrictsList.map((record, i) => (
+              <option key={i} value={i}>
+                {record.attributes['NAME'] || "Unnamed"}
+              </option>
+            ))}
+
+            {boundaryType === "Service Planning Area (SPA)" && servicePlanningAreaList.map((record, i) => (
+              <option key={i} value={i}>
+                {record.attributes['SPA_NAME'] || "Unnamed"}
+              </option>
+            ))}
+
+            {boundaryType === "Supervisor District" && supervisorDistrictList.map((record, i) => (
+              <option key={i} value={i}>
+                {record.attributes['LABEL'] || "Unnamed"}
+              </option>
+            ))}
           </select>
+
+          <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>
+            Please choose your datasets:
+          </label>
+
+          <div style={{ ...dropdownStyle, overflowY: 'auto', maxHeight: '150px', border: '1px solid #ccc', borderRadius: '4px' }}>
+            {datasets.map(dataset => (
+              <div key={dataset.id} style={{ padding: '8px', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedDatasets.includes(dataset.id)}
+                  onChange={() => handleDatasetChange(dataset.id)}
+                  style={{ marginRight: '8px' }}
+                />
+                {dataset.name}
+              </div>
+            ))}
+          </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
             <button onClick={handleReportClick}>View Report</button>
