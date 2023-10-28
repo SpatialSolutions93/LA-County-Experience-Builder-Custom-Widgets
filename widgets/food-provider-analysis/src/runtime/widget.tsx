@@ -15,8 +15,7 @@ import "react-pdf/dist/esm/Page/TextLayer.css";
 import { CSSProperties } from 'react';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 
-import * as Constants from './constants';
-//import * as Datasets from './datasets';
+import * as Logos from './logos';
 
 const { useRef, useState } = React;
 
@@ -399,13 +398,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             {
                 columns: [
                     {
-                        image: Constants.LACounty_logo,
+                        image: Logos.LACounty_logo,
                         height: 250,
                         width: 250,
                         absolutePosition: { x: 20, y: 810 }
                     },
                     {
-                        image: Constants.USC_logo,
+                        image: Logos.USC_logo,
                         height: 150,
                         width: 365,
                         absolutePosition: { x: 270, y: 928 }
@@ -445,13 +444,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             {
                 columns: [
                     {
-                        image: Constants.LACounty_logo,
+                        image: Logos.LACounty_logo,
                         height: 400,
                         width: 400,
                         absolutePosition: { x: 368, y: 610 }
                     },
                     {
-                        image: Constants.USC_logo,
+                        image: Logos.USC_logo,
                         height: 240,
                         width: 584,
                         absolutePosition: { x: 1056, y: 708 }
@@ -582,7 +581,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             layout: 'noBorders'
                         }
                     ],
-                    pageBreak: 'after'
                 },
 
                 // Add the dynamic slides
