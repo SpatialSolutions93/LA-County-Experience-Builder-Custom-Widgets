@@ -50,12 +50,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [selectedDatasets, setSelectedDatasets] = useState([]);
     const [isFetchingData, setIsFetchingData] = useState(false);
     const [loadingDots, setLoadingDots] = useState(1);
-    const [mapScreenshotDataArray, setMapScreenshotDataArray] = useState([]);
-    const progressCtrRef = React.useRef(0);
-    const slideCtrRef = React.useRef(0);
+    const [mapScreenshotData, setMapScreenshotData] = useState(null);
     const [blobURL, setBlobURL] = useState(null);
-
-    const pointsInsideFeatureCountRef = React.useRef(null);
 
     const mapStyle: CSSProperties = {
         position: 'absolute',
@@ -173,28 +169,22 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }));
 
     const datasets = [
-        { id: 1, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
-        { id: 2, name: "CalFresh Restaurants (Unavailable)", dataSource: calFreshRestaurant },
+        { id: 1, name: "CalFresh Food Retailer", dataSource: calFreshFoodRetailer },
+        { id: 2, name: "CalFresh Restaurant", dataSource: calFreshRestaurant },
         { id: 3, name: "Community Gardens", dataSource: communityGardens },
-        { id: 4, name: "EBT Stores and Markets (Unavailable)", dataSource: ebtStoresAndMarkets },
+        { id: 4, name: "EBT Stores and Markets", dataSource: ebtStoresAndMarkets },
         { id: 5, name: "Farmer's Markets", dataSource: farmersMarkets },
-        { id: 6, name: "Food Pantries", dataSource: foodPantry },
+        { id: 6, name: "Food Pantry", dataSource: foodPantry },
         { id: 7, name: "Parks", dataSource: parks },
         { id: 8, name: "Parks and Gardens", dataSource: parksAndGardens },
         { id: 9, name: "Public Elementary Schools", dataSource: publicElementarySchools },
         { id: 10, name: "Public High Schools", dataSource: publicHighSchools },
         { id: 11, name: "Public Middle Schools", dataSource: publicMiddleSchools },
-        { id: 12, name: "Restaurants (Unavailable)", dataSource: restaurants },
-        { id: 13, name: "Retail Food Markets (Unavailable)", dataSource: retailFoodMarkets },
-        { id: 14, name: "Supermarkets and Grocery Stores (Unavailable)", dataSource: supermarketsAndGroceryStores },
-        { id: 15, name: "WIC Food Retailers (Unavailable)", dataSource: wicFoodRetailer },
+        { id: 12, name: "Restaurants", dataSource: restaurants },
+        { id: 13, name: "Retail Food Markets", dataSource: retailFoodMarkets },
+        { id: 14, name: "Supermarkets and Grocery Stores", dataSource: supermarketsAndGroceryStores },
+        { id: 15, name: "WIC Food Retailer", dataSource: wicFoodRetailer },
     ];
-
-    function getDatasetName(datasetId) {
-        const dataset = datasets.find(ds => ds.id === datasetId);
-        return dataset ? dataset.name : 'Unknown Dataset';
-    }
-
 
     const [neighborhoods] = useState(new FeatureLayer({
         portalItem: {
@@ -313,19 +303,34 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const generateTestPDF = async (imageDimensions) => {
 
+        let pointsInsideFeature;
+
+        try {
+            pointsInsideFeature = await getPointsInsideFeature();
+        } catch (error) {
+            console.error("Error getting points inside feature:", error);
+            return; // Exit if there's an error
+        }
+
         // Create a canvas for the basemap and polygon
         const canvas = document.createElement('canvas');
         const canvasWidth = 1920;
         const canvasHeight = 1080;
         canvas.width = canvasWidth;
+        console.log("canvasWidth", canvas.width);
         canvas.height = canvasHeight;
+        console.log("canvasHeight", canvas.height);
         const mapWidth = imageDimensions.width;
+        console.log("mapWidth", mapWidth);
         const mapHeight = imageDimensions.height;
+        console.log("mapHeight", mapHeight);
 
         // Calculate the image's height based on the original width-to-height ratio, considering new width.
         const mapAspectRatio = mapHeight / mapWidth;
         let imageWidth = (canvasWidth / 2) * .9;
+        console.log("imageWidth", imageWidth);
         let imageHeight = imageWidth * mapAspectRatio;
+        console.log("imageHeight", imageHeight);
 
         // Ensure the image fits within the canvas height
         if (imageHeight > canvasHeight) {
@@ -342,6 +347,73 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         let title_page;
 
         const bullet = '\u2022'; // Unicode bullet point
+
+        const coloredLine = {
+            canvas: [{
+                type: 'line',
+                x1: -125,
+                y1: 50,
+                x2: 650,
+                y2: 50,
+                lineWidth: 4,
+                lineColor: '#4472C4'
+            }],
+            margin: [0, 0, 0, 220]
+        };
+
+        const headerWithRectangles = {
+            stack: [
+                {
+                    canvas: [
+                        {
+                            type: 'rect',
+                            x: -182,
+                            y: 250,  // Starting position
+                            w: 30,
+                            h: 120,
+                            color: '#FFCC00'
+                        },
+                        {
+                            type: 'rect',
+                            x: -209,
+                            y: 250,  // Adjust based on the desired space between the rectangles
+                            w: 10,
+                            h: 120,
+                            color: '#FFCC00'
+                        }
+                    ]
+                },
+                { text: "Farmer's Markets", style: 'header', margin: [65, -60, 0, -200], alignment: 'left' } // Adjust the margin as per your requirements for fine-tuning
+
+            ],
+            margin: [0, 0, 0, 20]
+        };
+
+        statistics = [
+            headerWithRectangles,
+            coloredLine,
+            { text: `${bullet} ${pointsInsideFeature} farmer’s market in ${selectedFeatureName}`, style: 'bodyText' },
+            { text: `${bullet} 1 farmer’s market for every [#] people`, style: 'bodyText' },
+            { text: `${bullet} ${averagePerSquareMile} farmer’s markets every square mile`, style: 'bodyText' },
+            {
+                columns: [
+                    {
+                        image: Logos.LACounty_logo,
+                        height: 250,
+                        width: 250,
+                        absolutePosition: { x: 20, y: 810 }
+                    },
+                    {
+                        image: Logos.USC_logo,
+                        height: 150,
+                        width: 365,
+                        absolutePosition: { x: 270, y: 928 }
+                    }
+                ]
+            }
+        ];
+
+        console.log("statistics", statistics);
 
         title_page = [
             {
@@ -364,7 +436,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     {
                         text: `Generated on ${new Date().toLocaleDateString()}`, // This will display the current date
                         style: 'date_style',
-                        margin: [0, 50]
+                        margin: [0, 0]
                     }
                 ],
                 margin: [0, -150]
@@ -387,84 +459,11 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             }
         ];
 
+        console.log("title_page", title_page);
+
         const overlap = 10;  // Set the thickness of your outline
 
-        function generateSlideForDataset(datasetId, datasetName) {
-
-            const coloredLine = {
-                canvas: [{
-                    type: 'line',
-                    x1: -10,
-                    y1: 210,
-                    x2: 720,
-                    y2: 210,
-                    lineWidth: 4,
-                    lineColor: '#4472C4'
-                }],
-                margin: [0, 0, 0, 220]
-            };
-
-            console.log(`Found ${pointsInsideFeatureCountRef.current} points inside the feature NEW`);
-
-            const textGroup = {
-                stack: [
-                    { text: `${bullet} ${pointsInsideFeatureCountRef.current} ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
-                    { text: `${bullet} 1 ${datasetName} for every [#] people`, style: 'bodyText' },
-                    { text: `${bullet} ${averagePerSquareMile} ${datasetName} every square mile`, style: 'bodyText' }
-                ],
-                margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-            };
-
-            const headerWithRectangles = {
-                stack: [
-                    {
-                        canvas: [
-                            {
-                                type: 'rect',
-                                x: -82,
-                                y: 310,  // Starting position
-                                w: 30,
-                                h: 120,
-                                color: '#FFCC00'
-                            },
-                            {
-                                type: 'rect',
-                                x: -104,
-                                y: 310,  // Adjust based on the desired space between the rectangles
-                                w: 10,
-                                h: 120,
-                                color: '#FFCC00'
-                            }
-                        ]
-                    },
-                    { text: datasetName, style: 'header', margin: [65, -100, 0, -200], alignment: 'left' } // Adjust the margin as per your requirements for fine-tuning
-
-                ],
-                margin: [0, 0, 0, 20]
-            };
-            // Define statistics inside the function to ensure it's unique for each slide
-            const statistics = [
-                headerWithRectangles,
-                coloredLine,
-                textGroup,
-                {
-                    columns: [
-                        {
-                            image: Logos.LACounty_logo,
-                            height: 250,
-                            width: 250,
-                            absolutePosition: { x: 20, y: 810 }
-                        },
-                        {
-                            image: Logos.USC_logo,
-                            height: 150,
-                            width: 365,
-                            absolutePosition: { x: 270, y: 928 }
-                        }
-                    ]
-                }
-            ];
-
+        function generateSlideForDataset(datasetId) {
             return {
                 table: {
                     widths: ['50%', '60%'],
@@ -483,14 +482,16 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             };
         }
 
+        console.log("generateSlideForDataset", generateSlideForDataset);
 
         let dynamicSlides = [];
 
         for (let datasetId of selectedDatasets) {
-            const datasetName = getDatasetName(datasetId);
-            dynamicSlides.push(generateSlideForDataset(datasetId, datasetName));
+            console.log("datasetId", datasetId);
+            console.log("Statistics", statistics);
+            dynamicSlides.push(generateSlideForDataset(datasetId));
+            console.log("dynamicSlides", dynamicSlides);
         }
-
 
         const docDefinition = {
             // Background definition for the red rectangle and black outline
@@ -588,7 +589,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                         stack: [
                             slide,
                             {
-                                image: mapScreenshotDataArray[index],
+                                image: mapScreenshotData,
                                 width: imageWidth,
                                 height: imageHeight,
                                 absolutePosition: { x: 926, y: 188 } // 187
@@ -596,7 +597,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                         ]
                     }
                 })
-
             ]
             ,
 
@@ -640,11 +640,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     React.useEffect(() => {
         if (imageDimensions) {
             generateTestPDF(imageDimensions).then(() => {
-                progressCtrRef.current += 1;
-                if (progressCtrRef.current === slideCtrRef.current) {
-                    setPdfGenerationComplete(true);
-                    setIsLoadingReport(false);
-                }
+                setPdfGenerationComplete(true);
+                setIsLoadingReport(false);
             });
         }
     }, [imageDimensions]);
@@ -662,11 +659,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         };
 
         const screenshot = await mapView.takeScreenshot({ format: 'png', area: screenshotArea, width: mapView.width * 10, height: mapView.height * 10 });
-        console.log("Screenshot taken");
         return screenshot.dataUrl;
     }
-
-    let layerViews = {};
 
     const initializeMapView = async () => {
         if (mapViewRef.current) {
@@ -726,12 +720,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
             await mapView.when();
 
+            let lv; // Declare it outside the loop
+
             for (const dataset of datasets) {
-                if (selectedDatasets.includes(dataset.id) && dataset.dataSource) {
-                    const lv = await mapView.whenLayerView(dataset.dataSource);
-                    layerViews[dataset.id] = lv;
+                if (selectedDatasets.includes(dataset.id) && dataset.dataSource) { // Check if this dataset is selected
+                    lv = await mapView.whenLayerView(dataset.dataSource); // Assign to the outer variable
                 }
             }
+
+            layerView = lv; // Now, this should have the correct value      
 
             // Wait for the mapView to finish updating after the zoom operation
             await new Promise<void>(resolve => {
@@ -742,8 +739,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     }
                 });
             });
-
-            console.log("Map view initialized");
         }
     }
 
@@ -843,66 +838,39 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         // Clear previous mask graphics and add the new mask to the GraphicsLayer
         maskLayer.graphics.removeAll();
         maskLayer.graphics.add(maskGraphic);
-
-        console.log("Mask created");
     };
 
-    const filterPointsWithinPolygon = (polygonGeometry, datasetId) => {
-        // Get the layer view for the given dataset ID
-        const currentLayerView = layerViews[datasetId];
-        if (!currentLayerView) {
-            console.error(`No layer view found for dataset ID: ${datasetId}`);
-            return;
-        }
-
+    const filterPointsWithinPolygon = (polygonGeometry) => {
         // Set a spatial filter on the layer view
-        currentLayerView.filter = {
+        layerView.filter = {
             geometry: polygonGeometry,
             spatialRelationship: "intersects"
         };
-
-        console.log("Filter set");
     };
 
-    const waitForLayerViewUpdate = (datasetId) => {
-        const currentLayerView = layerViews[datasetId];
-        if (!currentLayerView) {
-            console.error(`No layer view found for dataset ID: ${datasetId}`);
-            return Promise.reject(`No layer view found for dataset ID: ${datasetId}`);
-        }
-
+    const waitForLayerViewUpdate = () => {
         return new Promise<void>(resolve => {
-            if (!currentLayerView.updating) {
+            if (!layerView.updating) {
                 resolve();
             } else {
-                const handle = currentLayerView.watch('updating', updating => {
+                const handle = layerView.watch('updating', updating => {
                     if (!updating) {
                         handle.remove();
                         resolve();
-
-                        console.log("Layer view updated");
                     }
                 });
             }
         });
     };
 
-    const getPointsInsideFeature = (datasetId) => {
-        const currentLayerView = layerViews[datasetId];
-        if (!currentLayerView) {
-            console.error(`No layer view found for dataset ID: ${datasetId}`);
-            return Promise.reject(`No layer view found for dataset ID: ${datasetId}`);
-        }
-
+    const getPointsInsideFeature = () => {
         // Define query parameters
-        const query = currentLayerView.layer.createQuery();
-        query.geometry = currentLayerView.filter.geometry; // We use the filter geometry
+        const query = layerView.layer.createQuery();
+        query.geometry = layerView.filter.geometry; // We use the filter geometry
         query.spatialRelationship = "intersects";
 
-        return currentLayerView.queryFeatures(query)
+        return layerView.queryFeatures(query)
             .then(result => {
-                pointsInsideFeatureCountRef.current = result.features.length;
-                console.log(`Found ${pointsInsideFeatureCountRef.current} points inside the feature`);
                 return result.features.length;
             });
     };
@@ -915,17 +883,11 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         return null;
     }
 
+
     /**
      * Handle the click event to generate the PDF report.
      */
     const handleReportClick = async () => {
-
-        console.log("Generating report...");
-
-        setMapScreenshotDataArray([]);
-        // Initialize an empty array to store the screenshots
-        const screenshots = [];
-
         setShowPDFPane(true);
         setPdfGenerationComplete(false);
         setIsLoadingReport(true);
@@ -976,45 +938,46 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
             mapView.graphics.add(graphic);
 
+            mapView.goTo({ target: extXY })
+                .then(() => {
+                    return new Promise<void>(resolve => {
+                        const handle = mapView.watch('updating', updating => {
+                            if (!updating) {
+                                handle.remove();
+                                resolve();
+                            }
+                        });
+                    });
+                })
+                .then(() => createMask(record.geometry))
+                .then(() => filterPointsWithinPolygon(record.geometry))
+                .then(() => waitForLayerViewUpdate())
+                .then(() => getPointsInsideFeature())
+
+
             // Loop through each dataset, set it as visible, wait for the map to update, and take a screenshot
             for (let datasetId of selectedDatasets) {
-
-                slideCtrRef.current = selectedDatasets.length;
+                console.log("datasetId", datasetId);
 
                 // Set all layers as invisible
                 for (const layer of webmap.layers) {
                     layer.visible = false;
+                    console.log("layer", layer);
                 }
 
                 // Find the current layer using our custom function
                 const currentLayer = findLayerByDatasetId(datasetId);
                 if (currentLayer) {
                     currentLayer.visible = true;
+                    console.log("currentLayer", currentLayer);
                 }
 
-                mapView.goTo({ target: extXY })
-                    .then(() => {
-                        return new Promise<void>(resolve => {
-                            const handle = mapView.watch('updating', updating => {
-                                if (!updating) {
-                                    handle.remove();
-                                    resolve();
-                                }
-                            });
-                        });
-                    })
-                    .then(() => createMask(record.geometry))
-                    .then(() => filterPointsWithinPolygon(record.geometry, datasetId))
-                    .then(() => waitForLayerViewUpdate(datasetId))
-                    .then(() => getPointsInsideFeature(datasetId))
-                    .then(() => waitForLayerViewUpdate(datasetId))
-
+                await waitForLayerViewUpdate();
 
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 const dataUrl = await handleScreenshot();
 
-                // Push the screenshot data URL to the screenshots array
-                screenshots.push(dataUrl);
+                setMapScreenshotData(dataUrl);
 
                 // Get the image dimensions
                 try {
@@ -1025,14 +988,12 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 }
             }
 
-            // Update the state with the collected screenshots
-            setMapScreenshotDataArray(screenshots);
-
         } else {
             console.error("Invalid feature extent. Cannot generate report.");
             setIsLoadingReport(false);
         }
     };
+
 
     React.useEffect(() => {
         if (pdfBlob instanceof Blob) {
@@ -1196,7 +1157,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                     <button onClick={handleDownload} style={{ margin: '10px' }}>Download PDF</button>
                                     <button onClick={() => setShowPDFPane(false)} style={{ margin: '10px' }}>Close</button>
                                 </div>
-                                <div style={{ width: '100%', height: '100%', overflow: 'auto' }}>
+                                <div style={{ width: '90%', height: '80%', overflow: 'auto' }}>
                                     <iframe src={blobURL} width="100%" height="100%" />
 
                                 </div>
@@ -1246,5 +1207,3 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         </div>
     );
 }
-
-
