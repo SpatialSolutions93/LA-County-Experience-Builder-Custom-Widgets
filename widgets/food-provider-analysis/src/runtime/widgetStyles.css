@@ -29,3 +29,11 @@
         transform: rotate(360deg);
     }
 }
+
+.d-flex.layout-item.is-widget.app-root-emotion-cache-ltr-19up97v {
+    pointer-events: none !important;
+}
+
+.close-report-button:hover {
+    color: red;
+}

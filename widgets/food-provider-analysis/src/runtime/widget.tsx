@@ -54,6 +54,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const progressCtrRef = React.useRef(0);
     const slideCtrRef = React.useRef(0);
     const [blobURL, setBlobURL] = useState(null);
+    const [selectedRecordIndex, setSelectedRecordIndex] = React.useState("");
 
     const pointsInsideFeatureCountRef = React.useRef(null);
 
@@ -69,10 +70,11 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const reportButtonStyle: CSSProperties = {
         position: 'absolute',
-        top: '15.7%',
-        left: '1.5%',
+        top: '131px',
+        left: '15px',
         zIndex: 2000,
         boxShadow: 'rgba(0, 0, 0, 0.2) 0px 1px 2px 0px',
+        pointerEvents: 'auto'
     };
 
     const reportFormStyle: CSSProperties = {
@@ -86,6 +88,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         border: '1px solid black',
         padding: '20px', // added padding inside for spacing
         boxSizing: 'border-box', // to ensure padding and border are included in the width
+        pointerEvents: 'auto',
+        position: 'relative'
     };
 
     const dropdownStyle: CSSProperties = {
@@ -96,6 +100,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         borderRadius: '4px', // slightly rounded corners
         fontSize: '16px', // size of the font in the dropdown
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // subtle shadow for depth
+        pointerEvents: 'auto'
     };
 
     const [farmersMarkets] = useState(new FeatureLayer({
@@ -174,7 +179,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const datasets = [
         { id: 1, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
-        { id: 2, name: "CalFresh Restaurants (Unavailable)", dataSource: calFreshRestaurant },
+        { id: 2, name: "CalFresh Restaurants", dataSource: calFreshRestaurant },
         { id: 3, name: "Community Gardens", dataSource: communityGardens },
         { id: 4, name: "EBT Stores and Markets (Unavailable)", dataSource: ebtStoresAndMarkets },
         { id: 5, name: "Farmer's Markets", dataSource: farmersMarkets },
@@ -307,6 +312,20 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         height: number;
     }
 
+    const handleCloseReport = () => {
+        // Hide the report form
+        const reportForm = document.getElementById("reportForm");
+        if (reportForm) {
+            reportForm.style.visibility = "hidden";
+        }
+
+        // Reset the form data
+        setBoundaryType("");  // Reset boundary type
+        setSelectedRecordIndex("");
+        setSelectedDatasets([]);  // Reset selected datasets
+    };
+
+
     const attributeKey = ATTRIBUTE_MAP[boundaryType];
 
     const featureName = selectedRecord?.attributes?.[attributeKey] || "Unknown Name";
@@ -422,7 +441,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             {
                                 type: 'rect',
                                 x: -82,
-                                y: 310,  // Starting position
+                                y: 225,  // Starting position
                                 w: 30,
                                 h: 120,
                                 color: '#FFCC00'
@@ -430,7 +449,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             {
                                 type: 'rect',
                                 x: -104,
-                                y: 310,  // Adjust based on the desired space between the rectangles
+                                y: 225,  // Adjust based on the desired space between the rectangles
                                 w: 10,
                                 h: 120,
                                 color: '#FFCC00'
@@ -644,6 +663,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 if (progressCtrRef.current === slideCtrRef.current) {
                     setPdfGenerationComplete(true);
                     setIsLoadingReport(false);
+
+                    handleCloseReport();
                 }
             });
         }
@@ -769,6 +790,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
      */
     const handleDropdownChange = (event) => {
         const selectedIndex = event.target.value;
+        setSelectedRecordIndex(selectedIndex);
 
         let record;
         if (boundaryType === "Neighborhood") {
@@ -919,6 +941,11 @@ export default function Widget(props: AllWidgetProps<unknown>) {
      * Handle the click event to generate the PDF report.
      */
     const handleReportClick = async () => {
+
+        const reportForm = document.getElementById("reportForm");
+        if (reportForm) {
+            reportForm.style.visibility = "hidden";
+        }
 
         console.log("Generating report...");
 
@@ -1076,12 +1103,22 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 <div style={mapStyle} ref={mapViewRef}>
                 </div>
                 <div className="record-list" id="reportForm" style={reportFormStyle}>
-                    <label style={{ display: 'block', marginBottom: '10px' }}>Please select your boundary type:</label>
+
+                    <button
+                        className="close-report-button"
+                        style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 3000 }}
+                        onClick={handleCloseReport}
+                    >
+                        ×
+                    </button>
+
+                    <label style={{ display: 'block', marginBottom: '10px', pointerEvents: 'auto' }}>Please select your boundary type:</label>
                     <select
+                        value={boundaryType}  // This line will control the selected option based on the state.
                         onChange={(event) => setBoundaryType(event.target.value)}
                         style={dropdownStyle}
                     >
-                        <option value="" disabled selected>Select a boundary type</option>
+                        <option value="">Select a boundary type</option>
                         <option value="City">City</option>
                         <option value="Countywide Statistical Area (CSA)">Countywide Statistical Area (CSA)</option>
                         <option value="Census Tract">Census Tract</option>
@@ -1091,8 +1128,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                         <option value="Supervisor District">Supervisor District</option>
                     </select>
 
+
                     <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>Please choose your boundary:</label>
-                    <select onChange={handleDropdownChange} style={dropdownStyle}>
+                    <select
+                        value={selectedRecordIndex}
+                        onChange={handleDropdownChange}
+                        style={dropdownStyle}
+                    >
                         <option value="" disabled selected>
                             {isFetchingData ? `Loading${'.'.repeat(loadingDots)}` : "Select a record"}
                         </option>
@@ -1144,21 +1186,21 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                         Please choose your datasets:
                     </label>
 
-                    <div style={{ ...dropdownStyle, overflowY: 'auto', maxHeight: '150px', border: '1px solid #ccc', borderRadius: '4px' }}>
+                    <div style={{ ...dropdownStyle, overflowY: 'auto', maxHeight: '150px', border: '1px solid #ccc', borderRadius: '4px', pointerEvents: 'auto' }}>
                         {datasets.map(dataset => (
-                            <div key={dataset.id} style={{ padding: '8px', display: 'flex', alignItems: 'center' }}>
+                            <div key={dataset.id} style={{ padding: '8px', display: 'flex', alignItems: 'center', pointerEvents: 'auto' }}>
                                 <input
                                     type="checkbox"
                                     checked={selectedDatasets.includes(dataset.id)}
                                     onChange={() => handleDatasetChange(dataset.id)}
-                                    style={{ marginRight: '8px' }}
+                                    style={{ marginRight: '8px', pointerEvents: 'auto' }}
                                 />
                                 {dataset.name}
                             </div>
                         ))}
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', pointerEvents: 'auto' }}>
                         <button onClick={handleReportClick}>View Report</button>
                     </div>
                 </div>
@@ -1177,6 +1219,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                         justifyContent: 'center',
                         alignItems: 'center',
                         border: '1px solid black',
+                        pointerEvents: 'auto'
                     }}>
                         {isLoadingReport ? (
                             // Loading UI
@@ -1192,11 +1235,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                         ) : (
                             // PDF Display
                             <>
-                                <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <button onClick={handleDownload} style={{ margin: '10px' }}>Download PDF</button>
+                                <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
                                     <button onClick={() => setShowPDFPane(false)} style={{ margin: '10px' }}>Close</button>
                                 </div>
-                                <div style={{ width: '100%', height: '100%', overflow: 'auto' }}>
+                                <div style={{ width: '100%', height: '100%', overflow: 'auto', pointerEvents: 'auto' }}>
                                     <iframe src={blobURL} width="100%" height="100%" />
 
                                 </div>
@@ -1226,17 +1268,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             }
         };
     }, []);
-
-    /**
-     * Download the generated PDF report.
-     */
-    const handleDownload = () => {
-        const blobURL = URL.createObjectURL(pdfBlob);
-        const tempLink = document.createElement('a');
-        tempLink.href = blobURL;
-        tempLink.setAttribute('download', 'report.pdf');
-        tempLink.click();
-    };
 
     return (
         <div className="widget-use-feature-layer" style={{ width: '100%', height: '100%', maxHeight: '800px', overflow: 'auto' }}>
