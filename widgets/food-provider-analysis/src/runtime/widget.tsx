@@ -155,14 +155,16 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const [restaurants] = useState(new FeatureLayer({
         portalItem: {
-            id: '14d0a2ba94a64be2b1b32c1d560f58cf'
-        }
+            id: 'a302cf868b08407cb2f287d9ee10ef76'
+        },
+        definitionExpression: "PE_DESCRIPTION LIKE '%RESTAURANT%'"
     }));
 
     const [retailFoodMarkets] = useState(new FeatureLayer({
         portalItem: {
-            id: '14d0a2ba94a64be2b1b32c1d560f58cf'
-        }
+            id: 'a302cf868b08407cb2f287d9ee10ef76'
+        },
+        definitionExpression: "PE_DESCRIPTION LIKE '%FOOD MKT RETAIL%'"
     }));
 
     const [supermarketsAndGroceryStores] = useState(new FeatureLayer({
@@ -173,7 +175,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const [wicFoodRetailer] = useState(new FeatureLayer({
         portalItem: {
-            id: '757431c30cb14e95884623655951d458'
+            id: '02acd30ed2264509bb0bb8bf6c14b8eb'
         }
     }));
 
@@ -181,7 +183,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         { id: 1, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
         { id: 2, name: "CalFresh Restaurants", dataSource: calFreshRestaurant },
         { id: 3, name: "Community Gardens", dataSource: communityGardens },
-        { id: 4, name: "EBT Stores and Markets (Unavailable)", dataSource: ebtStoresAndMarkets },
+        { id: 4, name: "EBT Stores and Markets", dataSource: ebtStoresAndMarkets },
         { id: 5, name: "Farmer's Markets", dataSource: farmersMarkets },
         { id: 6, name: "Food Pantries", dataSource: foodPantry },
         { id: 7, name: "Parks", dataSource: parks },
@@ -189,10 +191,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         { id: 9, name: "Public Elementary Schools", dataSource: publicElementarySchools },
         { id: 10, name: "Public High Schools", dataSource: publicHighSchools },
         { id: 11, name: "Public Middle Schools", dataSource: publicMiddleSchools },
-        { id: 12, name: "Restaurants (Unavailable)", dataSource: restaurants },
-        { id: 13, name: "Retail Food Markets (Unavailable)", dataSource: retailFoodMarkets },
-        { id: 14, name: "Supermarkets and Grocery Stores (Unavailable)", dataSource: supermarketsAndGroceryStores },
-        { id: 15, name: "WIC Food Retailers (Unavailable)", dataSource: wicFoodRetailer },
+        { id: 12, name: "Restaurants", dataSource: restaurants },
+        { id: 13, name: "Retail Food Markets", dataSource: retailFoodMarkets },
+        //{ id: 14, name: "Supermarkets and Grocery Stores (Unavailable)", dataSource: supermarketsAndGroceryStores },
+        { id: 15, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
     ];
 
     function getDatasetName(datasetId) {
@@ -731,9 +733,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             if (selectedDatasets.includes(13)) {
                 webmap.add(retailFoodMarkets);
             }
-            if (selectedDatasets.includes(14)) {
-                webmap.add(supermarketsAndGroceryStores);
-            }
+            //if (selectedDatasets.includes(14)) {
+            //    webmap.add(supermarketsAndGroceryStores);
+            //}
             if (selectedDatasets.includes(15)) {
                 webmap.add(wicFoodRetailer);
             }

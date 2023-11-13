@@ -9,6 +9,7 @@
     left: 5%;
     position: absolute;
     border: 3px solid black;
+    pointer-events: all !important;
 }
 
 .esri-feature-table__loader-container {
@@ -20,6 +21,7 @@
     left: 70px;
     position: relative;
     z-index: 300;
+    pointer-events: all !important;
 }
 
 .esri-icon-arrow-left {
@@ -27,4 +29,23 @@
     color: #000;
     font-size: 20px;
     margin-right: 10px;
+    pointer-events: all !important;
+}
+
+.app-root-emotion-cache-ltr-14a4kvk {
+    pointer-events: none !important;
+}
+
+.close-button {
+    position: absolute;
+    right: 88px;
+    top: 5px;
+    cursor: pointer;
+    font-size: 20px;
+    z-index: 2100;
+}
+
+.close-button:hover {
+    color: red;
+    /* Change the color to red on hover */
 }

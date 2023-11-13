@@ -64,14 +64,16 @@ const FeatureTableWidget = () => {
 
     const [restaurants] = useState(new FeatureLayer({
         portalItem: {
-            id: '14d0a2ba94a64be2b1b32c1d560f58cf'
-        }
+            id: 'a302cf868b08407cb2f287d9ee10ef76'
+        },
+        definitionExpression: "PE_DESCRIPTION LIKE '%RESTAURANT%'"
     }));
 
     const [retailFoodMarkets] = useState(new FeatureLayer({
         portalItem: {
-            id: '14d0a2ba94a64be2b1b32c1d560f58cf'
-        }
+            id: 'a302cf868b08407cb2f287d9ee10ef76'
+        },
+        definitionExpression: "PE_DESCRIPTION LIKE '%FOOD MKT RETAIL%'"
     }));
 
     const [supermarketsAndGroceryStores] = useState(new FeatureLayer({
@@ -82,7 +84,7 @@ const FeatureTableWidget = () => {
 
     const [wicFoodRetailer] = useState(new FeatureLayer({
         portalItem: {
-            id: '757431c30cb14e95884623655951d458'
+            id: '02acd30ed2264509bb0bb8bf6c14b8eb'
         }
     }));
 
@@ -90,7 +92,7 @@ const FeatureTableWidget = () => {
         { id: 1, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
         { id: 2, name: "CalFresh Restaurants", dataSource: calFreshRestaurant },
         { id: 3, name: "Community Gardens", dataSource: communityGardens },
-        { id: 4, name: "EBT Stores and Markets (Unavailable)", dataSource: ebtStoresAndMarkets },
+        { id: 4, name: "EBT Stores and Markets", dataSource: ebtStoresAndMarkets },
         { id: 5, name: "Farmer's Markets", dataSource: farmersMarkets },
         { id: 6, name: "Food Pantries", dataSource: foodPantry },
         { id: 7, name: "Parks", dataSource: parks },
@@ -98,10 +100,10 @@ const FeatureTableWidget = () => {
         { id: 9, name: "Public Elementary Schools", dataSource: publicElementarySchools },
         { id: 10, name: "Public High Schools", dataSource: publicHighSchools },
         { id: 11, name: "Public Middle Schools", dataSource: publicMiddleSchools },
-        { id: 12, name: "Restaurants (Unavailable)", dataSource: restaurants },
-        { id: 13, name: "Retail Food Markets (Unavailable)", dataSource: retailFoodMarkets },
-        { id: 14, name: "Supermarkets and Grocery Stores (Unavailable)", dataSource: supermarketsAndGroceryStores },
-        { id: 15, name: "WIC Food Retailers (Unavailable)", dataSource: wicFoodRetailer },
+        { id: 12, name: "Restaurants", dataSource: restaurants },
+        { id: 13, name: "Retail Food Markets", dataSource: retailFoodMarkets },
+        //{ id: 14, name: "Supermarkets and Grocery Stores (Unavailable)", dataSource: supermarketsAndGroceryStores },
+        { id: 15, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
     ];
 
     const handleBackButton = () => {
@@ -144,7 +146,7 @@ const FeatureTableWidget = () => {
         left: '15px',
         zIndex: 2000,
         boxShadow: 'rgba(0, 0, 0, 0.2) 0px 1px 2px 0px',
-        pointerEvents: 'auto'
+        pointerEvents: 'all'
     };
 
     const dropdownStyle: CSSProperties = {
@@ -154,17 +156,21 @@ const FeatureTableWidget = () => {
         zIndex: 2000,
         backgroundColor: '#f0f0f0',
         padding: '10px',
-        visibility: 'hidden'
+        visibility: 'hidden',
+        pointerEvents: 'all',
+        width: '300px'
     };
 
     const viewTableButtonStyle: CSSProperties = {
         width: '35%',
-        backgroundColor: 'white'
+        backgroundColor: 'white',
+        pointerEvents: 'all'
     }
 
     const closeButtonStyle: CSSProperties = {
         // your current styles for the button
         display: isFeatureTableContainerVisible ? 'block' : 'none',
+        pointerEvents: 'all'
     };
 
     return (

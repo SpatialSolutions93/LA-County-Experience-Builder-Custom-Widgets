@@ -9,6 +9,7 @@
     left: 5% !important;
     position: absolute !important;
     border: 2px solid black !important;
+    pointer-events: all !important;
 }
 
 .esri-feature-table__loader-container {
@@ -20,6 +21,7 @@
     left: 70px !important;
     position: relative !important;
     z-index: 300 !important;
+    pointer-events: all !important;
 }
 
 .esri-icon-arrow-left {
@@ -27,4 +29,9 @@
     color: #000 !important;
     font-size: 20px !important;
     margin-right: 10px !important;
+    pointer-events: all !important;
+}
+
+.app-root-emotion-cache-ltr-c23qzn .map-is-live-mode .is-widget {
+    pointer-events: none !important;
 }
