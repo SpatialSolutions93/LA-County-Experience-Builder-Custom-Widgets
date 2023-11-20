@@ -48,7 +48,7 @@ const FeatureTableWidget = () => {
     const dropdownStyle: CSSProperties = {
         display: dropdownVisible ? 'block' : 'none',
         position: 'absolute',
-        top: '131px',
+        top: '215px',
         left: '45px',
         zIndex: 2000,
         backgroundColor: '#f0f0f0',
@@ -60,8 +60,8 @@ const FeatureTableWidget = () => {
     // Styles for the widget button
     const widgetButtonStyle: CSSProperties = {
         position: 'absolute',
-        top: '131px',
-        left: '17px',
+        top: '215px',
+        left: '15px',
         zIndex: 2000,
         boxShadow: 'rgba(0, 0, 0, 0.2) 0px 1px 2px 0px',
         pointerEvents: 'all',
@@ -78,7 +78,7 @@ const FeatureTableWidget = () => {
         display: viewGraphsVisible ? 'block' : 'none',
         position: 'absolute',
         left: '-30px',
-        top: '169px',
+        top: '253px',
         pointerEvents: 'all',
     };
 
@@ -89,7 +89,7 @@ const FeatureTableWidget = () => {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '10px',
-        top: '130px',
+        top: '214px',
         position: 'absolute',
         backgroundColor: 'white',
         border: '1px solid black',

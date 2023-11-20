@@ -142,7 +142,7 @@ const FeatureTableWidget = () => {
 
     const reportButtonStyle: CSSProperties = {
         position: 'absolute',
-        top: '131px',
+        top: '173px',
         left: '15px',
         zIndex: 2000,
         boxShadow: 'rgba(0, 0, 0, 0.2) 0px 1px 2px 0px',
@@ -151,8 +151,8 @@ const FeatureTableWidget = () => {
 
     const dropdownStyle: CSSProperties = {
         position: 'absolute',
-        top: '131px',
-        left: '45px',
+        top: '173px',
+        left: '47px',
         zIndex: 2000,
         backgroundColor: '#f0f0f0',
         padding: '10px',

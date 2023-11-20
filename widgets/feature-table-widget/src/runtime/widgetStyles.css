@@ -4,9 +4,9 @@
     display: flex;
     flex-direction: column !important;
     height: 500px !important;
-    top: 28% !important;
+    top: 31.6% !important;
     width: 90% !important;
-    left: 5% !important;
+    left: 4.5% !important;
     position: absolute !important;
     border: 2px solid black !important;
     pointer-events: all !important;
@@ -17,7 +17,7 @@
     margin: 0 8px !important;
     order: 1 !important;
     width: 20% !important;
-    top: 245px !important;
+    top: 274px !important;
     left: 70px !important;
     position: relative !important;
     z-index: 300 !important;
