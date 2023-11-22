@@ -1,109 +1,226 @@
 import { React } from 'jimu-core';
+import WebMap from '@arcgis/core/WebMap';
+import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import FeatureTable from "@arcgis/core/widgets/FeatureTable";
 import { CSSProperties } from 'react';
 import './widgetStyles.css';
 
-const { useRef, useState } = React;
+const { useRef, useState, useEffect } = React;
 
 const FeatureTableWidget = () => {
     const tableContainerRef = useRef(null);
     const [selectedLayerId, setSelectedLayerId] = useState<number | null>(null);
     const [isTableVisible, setIsTableVisible] = useState(false);
     const [isFeatureTableContainerVisible, setIsFeatureTableContainerVisible] = useState(false);
+    const [farmersMarkets, setFarmersMarkets] = useState<FeatureLayer | null>(null);
+    const [calFreshFoodRetailer, setCalFreshFoodRetailer] = useState<FeatureLayer | null>(null);
+    const [calFreshRestaurant, setCalFreshRestaurant] = useState<FeatureLayer | null>(null);
+    const [communityGardens, setCommunityGardens] = useState<FeatureLayer | null>(null);
+    const [foodPantry, setFoodPantry] = useState<FeatureLayer | null>(null);
+    const [parks, setParks] = useState<FeatureLayer | null>(null);
+    const [parksAndGardens, setParksAndGardens] = useState<FeatureLayer | null>(null);
+    const [publicElementarySchools, setPublicElementarySchools] = useState<FeatureLayer | null>(null);
+    const [publicHighSchools, setPublicHighSchools] = useState<FeatureLayer | null>(null);
+    const [publicMiddleSchools, setPublicMiddleSchools] = useState<FeatureLayer | null>(null);
+    const [restaurants, setRestaurants] = useState<FeatureLayer | null>(null);
+    const [retailFoodMarkets, setRetailFoodMarkets] = useState<FeatureLayer | null>(null);
+    const [wicFoodRetailer, setWicFoodRetailer] = useState<FeatureLayer | null>(null);
 
-    const [farmersMarkets] = useState(new FeatureLayer({
-        portalItem: {
-            id: '306d4e5ec8294275982f3efb5a10916e'
-        }
-    }));
+    useEffect(() => {
+        const LACountyWebMap = new WebMap({
+            portalItem: {
+                id: '2bc29891fc744b62b57de017897583e0'
+            }
+        });
 
-    const [calFreshFoodRetailer] = useState(new FeatureLayer({
-        url: 'https://services1.arcgis.com/RLQu0rK7h4kbsBq5/ArcGIS/rest/services/Store_Locations/FeatureServer/0'
-    }));
+        LACountyWebMap.load().then(() => {
 
-    const [calFreshRestaurant] = useState(new FeatureLayer({
-        url: 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/Food_Data_CalFresh_Restaurant_Meals_Program/FeatureServer/0'
-    }));
+            console.log("Loaded WebMap: ", LACountyWebMap);
 
-    const [communityGardens] = useState(new FeatureLayer({
-        url: 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/LACounty_CommunityGardens/FeatureServer/0'
-    }));
+            const schools = LACountyWebMap.layers.getItemAt(1) as GroupLayer;
+            const greenAndGardenSpaces = LACountyWebMap.layers.getItemAt(2) as GroupLayer;
+            const retailFoodOutlets = LACountyWebMap.layers.getItemAt(6) as GroupLayer;
+            const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
 
-    const [ebtStoresAndMarkets] = useState(new FeatureLayer({
-        url: 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/EBTstore_market/FeatureServer/0'
-    }));
+            console.log("Loaded Schools Group Layer: ", retailFoodOutlets);
 
-    const [foodPantry] = useState(new FeatureLayer({
-        url: 'https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/fap1/FeatureServer/0'
-    }));
+            const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
+            const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
 
-    const [parks] = useState(new FeatureLayer({
-        portalItem: {
-            id: 'e87c08ca142c4d38b4de6cfeab6adcb4'
-        }
-    }));
+            console.log("Loaded Retail Food Markets Group Layer: ", retailFoodMarkets_GroupLayer);
 
-    const [parksAndGardens] = useState(new FeatureLayer({
-        portalItem: {
-            id: 'cac8597956bd4be69c08deb71d4bf31c'
-        }
-    }));
+            const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(1) as FeatureLayer;
+            const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
+            const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
+            const communityGardens_loading = greenAndGardenSpaces.layers.getItemAt(2) as FeatureLayer;
+            const foodPantry_loading = foodAssistanceAndBenefits.layers.getItemAt(1) as FeatureLayer;
+            const parks_loading = greenAndGardenSpaces.layers.getItemAt(1) as FeatureLayer;
+            const parksAndGardens_loading = greenAndGardenSpaces.layers.getItemAt(0) as FeatureLayer;
+            const publicElementarySchools_loading = schools.layers.getItemAt(2) as FeatureLayer;
+            const publicHighSchools_loading = schools.layers.getItemAt(0) as FeatureLayer;
+            const publicMiddleSchools_loading = schools.layers.getItemAt(1) as FeatureLayer;
+            const restaurants_loading = restaurants_GroupLayer.layers.getItemAt(2) as FeatureLayer;
+            const retailFoodMarkets_loading = retailFoodMarkets_GroupLayer.layers.getItemAt(2) as FeatureLayer;
+            const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(0) as FeatureLayer;
 
-    const [publicElementarySchools] = useState(new FeatureLayer({
-        url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/LMS_Data_Public/MapServer/49'
-    }));
+            console.log(" Loaded restaurants_loading: ", restaurants_loading);
 
-    const [publicHighSchools] = useState(new FeatureLayer({
-        url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/LMS_Data_Public/MapServer/50'
-    }));
+            // Ensure the layer is fully loaded before using it
+            farmersMarkets_loading.load().then(() => {
+                setFarmersMarkets(farmersMarkets_loading);
+                console.log("Loaded layer: ", farmersMarkets_loading);
 
-    const [publicMiddleSchools] = useState(new FeatureLayer({
-        url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/LMS_Data_Public/MapServer/51'
-    }));
+                // Example of accessing a specific property
+                console.log("Layer title: ", farmersMarkets_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
 
-    const [restaurants] = useState(new FeatureLayer({
-        portalItem: {
-            id: 'a302cf868b08407cb2f287d9ee10ef76'
-        },
-        definitionExpression: "PE_DESCRIPTION LIKE '%RESTAURANT%'"
-    }));
+            calFreshFoodRetailer_loading.load().then(() => {
+                setCalFreshFoodRetailer(calFreshFoodRetailer_loading);
+                console.log("Loaded layer: ", calFreshFoodRetailer_loading);
 
-    const [retailFoodMarkets] = useState(new FeatureLayer({
-        portalItem: {
-            id: 'a302cf868b08407cb2f287d9ee10ef76'
-        },
-        definitionExpression: "PE_DESCRIPTION LIKE '%FOOD MKT RETAIL%'"
-    }));
+                // Example of accessing a specific property
+                console.log("Layer title: ", calFreshFoodRetailer_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
 
-    const [supermarketsAndGroceryStores] = useState(new FeatureLayer({
-        portalItem: {
-            id: '3796521d25ec4089ae17904f365c0178'
-        }
-    }));
+            calFreshRestaurant_loading.load().then(() => {
+                setCalFreshRestaurant(calFreshRestaurant_loading);
+                console.log("Loaded layer: ", calFreshRestaurant_loading);
 
-    const [wicFoodRetailer] = useState(new FeatureLayer({
-        portalItem: {
-            id: '02acd30ed2264509bb0bb8bf6c14b8eb'
-        }
-    }));
+                // Example of accessing a specific property
+                console.log("Layer title: ", calFreshRestaurant_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            communityGardens_loading.load().then(() => {
+                setCommunityGardens(communityGardens_loading);
+                console.log("Loaded layer: ", communityGardens_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", communityGardens_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            foodPantry_loading.load().then(() => {
+                setFoodPantry(foodPantry_loading);
+                console.log("Loaded layer: ", foodPantry_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", foodPantry_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            parks_loading.load().then(() => {
+                setParks(parks_loading);
+                console.log("Loaded layer: ", parks_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", parks_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            parksAndGardens_loading.load().then(() => {
+                setParksAndGardens(parksAndGardens_loading);
+                console.log("Loaded layer: ", parksAndGardens_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", parksAndGardens_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            publicElementarySchools_loading.load().then(() => {
+                setPublicElementarySchools(publicElementarySchools_loading);
+                console.log("Loaded layer: ", publicElementarySchools_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", publicElementarySchools_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            publicHighSchools_loading.load().then(() => {
+                setPublicHighSchools(publicHighSchools_loading);
+                console.log("Loaded layer: ", publicHighSchools_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", publicHighSchools_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            publicMiddleSchools_loading.load().then(() => {
+                setPublicMiddleSchools(publicMiddleSchools_loading);
+                console.log("Loaded layer: ", publicMiddleSchools_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", publicMiddleSchools_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            restaurants_loading.load().then(() => {
+                // Set the definition expression after the layer is loaded
+                restaurants_loading.definitionExpression = "PE_DESCRIPTION LIKE '%RESTAURANT%'";
+
+                setRestaurants(restaurants_loading);
+                console.log("Loaded layer: ", restaurants_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", restaurants_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            retailFoodMarkets_loading.load().then(() => {
+                // Set the definition expression after the layer is loaded
+                retailFoodMarkets_loading.definitionExpression = "PE_DESCRIPTION LIKE '%FOOD MKT RETAIL%'";
+
+                setRetailFoodMarkets(retailFoodMarkets_loading);
+                console.log("Loaded layer: ", retailFoodMarkets_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", retailFoodMarkets_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            wicFoodRetailer_loading.load().then(() => {
+                setWicFoodRetailer(wicFoodRetailer_loading);
+                console.log("Loaded layer: ", wicFoodRetailer_loading);
+
+                // Example of accessing a specific property
+                console.log("Layer title: ", wicFoodRetailer_loading.title);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+        }).catch(error => {
+            console.error("Error loading WebMap: ", error);
+        });
+    }, []);
 
     const datasets = [
         { id: 1, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
         { id: 2, name: "CalFresh Restaurants", dataSource: calFreshRestaurant },
         { id: 3, name: "Community Gardens", dataSource: communityGardens },
-        { id: 4, name: "EBT Stores and Markets", dataSource: ebtStoresAndMarkets },
-        { id: 5, name: "Farmer's Markets", dataSource: farmersMarkets },
-        { id: 6, name: "Food Pantries", dataSource: foodPantry },
-        { id: 7, name: "Parks", dataSource: parks },
-        { id: 8, name: "Parks and Gardens", dataSource: parksAndGardens },
-        { id: 9, name: "Public Elementary Schools", dataSource: publicElementarySchools },
-        { id: 10, name: "Public High Schools", dataSource: publicHighSchools },
-        { id: 11, name: "Public Middle Schools", dataSource: publicMiddleSchools },
-        { id: 12, name: "Restaurants", dataSource: restaurants },
-        { id: 13, name: "Retail Food Markets", dataSource: retailFoodMarkets },
-        //{ id: 14, name: "Supermarkets and Grocery Stores (Unavailable)", dataSource: supermarketsAndGroceryStores },
-        { id: 15, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
+        { id: 4, name: "Farmer's Markets", dataSource: farmersMarkets },
+        { id: 5, name: "Food Pantries", dataSource: foodPantry },
+        { id: 6, name: "Parks", dataSource: parks },
+        { id: 7, name: "Parks and Gardens", dataSource: parksAndGardens },
+        { id: 8, name: "Public Elementary Schools", dataSource: publicElementarySchools },
+        { id: 9, name: "Public High Schools", dataSource: publicHighSchools },
+        { id: 10, name: "Public Middle Schools", dataSource: publicMiddleSchools },
+        { id: 11, name: "Restaurants", dataSource: restaurants },
+        { id: 12, name: "Retail Food Markets", dataSource: retailFoodMarkets },
+        { id: 13, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
     ];
 
     const handleBackButton = () => {

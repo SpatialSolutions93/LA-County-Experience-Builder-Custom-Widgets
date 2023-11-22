@@ -30,6 +30,10 @@
     }
 }
 
+.jimu-input {
+    pointer-events: all !important;
+}
+
 .app-root-emotion-cache-ltr-c23qzn .map-is-live-mode .is-widget {
     pointer-events: none !important;
 }
