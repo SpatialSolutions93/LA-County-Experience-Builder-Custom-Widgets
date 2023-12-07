@@ -10,7 +10,7 @@ import foodRetailMarketsImage_Count from './FoodRetailMarketsGraph_County.png';
 import restaurantsImage_Neigh from './RestaurantsGraph_Neigh.png';
 import foodRetailMarketsImage_Neigh from './FoodRetailMarketsGraph_Neigh.png';
 
-const FeatureTableWidget = () => {
+const AnalysisGraphs = () => {
     const [selectedLocation, setSelectedLocation] = useState('');
     const [selectedOption, setSelectedOption] = useState('restaurants');
     const [imageSrc, setImageSrc] = useState(restaurantsImage_Count);
@@ -180,4 +180,4 @@ const FeatureTableWidget = () => {
     );
 };
 
-export default FeatureTableWidget;
+export default AnalysisGraphs;

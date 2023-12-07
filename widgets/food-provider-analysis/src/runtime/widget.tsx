@@ -130,14 +130,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             const greenAndGardenSpaces = LACountyWebMap.layers.getItemAt(2) as GroupLayer;
             const retailFoodOutlets = LACountyWebMap.layers.getItemAt(6) as GroupLayer;
             const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
-
-            console.log("Loaded Schools Group Layer: ", schools);
-
             const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
             const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
-
-            console.log("Loaded Retail Food Markets Group Layer: ", retailFoodMarkets_GroupLayer);
-
             const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(1) as FeatureLayer;
             const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
             const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
@@ -155,100 +149,60 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             // Ensure the layer is fully loaded before using it
             farmersMarkets_loading.load().then(() => {
                 setFarmersMarkets(farmersMarkets_loading);
-                console.log("Loaded layer: ", farmersMarkets_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", farmersMarkets_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             calFreshFoodRetailer_loading.load().then(() => {
                 setCalFreshFoodRetailer(calFreshFoodRetailer_loading);
-                console.log("Loaded layer: ", calFreshFoodRetailer_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", calFreshFoodRetailer_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             calFreshRestaurant_loading.load().then(() => {
                 setCalFreshRestaurant(calFreshRestaurant_loading);
-                console.log("Loaded layer: ", calFreshRestaurant_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", calFreshRestaurant_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             communityGardens_loading.load().then(() => {
                 setCommunityGardens(communityGardens_loading);
-                console.log("Loaded layer: ", communityGardens_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", communityGardens_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             foodPantry_loading.load().then(() => {
                 setFoodPantry(foodPantry_loading);
-                console.log("Loaded layer: ", foodPantry_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", foodPantry_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             parks_loading.load().then(() => {
                 setParks(parks_loading);
-                console.log("Loaded layer: ", parks_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", parks_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             parksAndGardens_loading.load().then(() => {
                 setParksAndGardens(parksAndGardens_loading);
-                console.log("Loaded layer: ", parksAndGardens_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", parksAndGardens_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             publicElementarySchools_loading.load().then(() => {
                 setPublicElementarySchools(publicElementarySchools_loading);
-                console.log("Loaded layer: ", publicElementarySchools_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", publicElementarySchools_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             publicHighSchools_loading.load().then(() => {
                 setPublicHighSchools(publicHighSchools_loading);
-                console.log("Loaded layer: ", publicHighSchools_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", publicHighSchools_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             publicMiddleSchools_loading.load().then(() => {
                 setPublicMiddleSchools(publicMiddleSchools_loading);
-                console.log("Loaded layer: ", publicMiddleSchools_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", publicMiddleSchools_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
@@ -258,10 +212,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 restaurants_loading.definitionExpression = "PE_DESCRIPTION LIKE '%RESTAURANT%'";
 
                 setRestaurants(restaurants_loading);
-                console.log("Loaded layer: ", restaurants_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", restaurants_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
@@ -271,20 +221,12 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 retailFoodMarkets_loading.definitionExpression = "PE_DESCRIPTION LIKE '%FOOD MKT RETAIL%'";
 
                 setRetailFoodMarkets(retailFoodMarkets_loading);
-                console.log("Loaded layer: ", retailFoodMarkets_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", retailFoodMarkets_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             wicFoodRetailer_loading.load().then(() => {
                 setWicFoodRetailer(wicFoodRetailer_loading);
-                console.log("Loaded layer: ", wicFoodRetailer_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", wicFoodRetailer_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
@@ -537,8 +479,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 margin: [0, 0, 0, 220]
             };
 
-            console.log(`Found ${pointsInsideFeatureCountRef.current} points inside the feature NEW`);
-
             const textGroup = {
                 stack: [
                     { text: `${bullet} ${pointsInsideFeatureCountRef.current} ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
@@ -724,7 +664,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                 image: mapScreenshotDataArray[index],
                                 width: imageWidth,
                                 height: imageHeight,
-                                absolutePosition: { x: 926, y: 188 } // 187
+                                absolutePosition: { x: 926, y: 194 } // 192
                             }
                         ]
                     }
@@ -797,7 +737,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         };
 
         const screenshot = await mapView.takeScreenshot({ format: 'png', area: screenshotArea, width: mapView.width * 10, height: mapView.height * 10 });
-        console.log("Screenshot taken");
+
         return screenshot.dataUrl;
     }
 
@@ -806,10 +746,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const initializeMapView = async () => {
         if (mapViewRef.current) {
 
-            console.log("Initializing map view");
-
             if (selectedDatasets.includes(1)) {
-                console.log("Adding CalFresh Food Retailer: ", calFreshFoodRetailer);
                 webmap.add(calFreshFoodRetailer);
             }
             if (selectedDatasets.includes(2)) {
@@ -840,7 +777,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 webmap.add(publicMiddleSchools);
             }
             if (selectedDatasets.includes(11)) {
-                console.log("Adding Restaurants: ", restaurants);
                 webmap.add(restaurants);
             }
             if (selectedDatasets.includes(12)) {
@@ -875,8 +811,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     }
                 });
             });
-
-            console.log("Map view initialized");
         }
     }
 
@@ -977,8 +911,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         // Clear previous mask graphics and add the new mask to the GraphicsLayer
         maskLayer.graphics.removeAll();
         maskLayer.graphics.add(maskGraphic);
-
-        console.log("Mask created");
     };
 
     const filterPointsWithinPolygon = (polygonGeometry, datasetId) => {
@@ -994,8 +926,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             geometry: polygonGeometry,
             spatialRelationship: "intersects"
         };
-
-        console.log("Filter set");
     };
 
     const waitForLayerViewUpdate = (datasetId) => {
@@ -1013,8 +943,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     if (!updating) {
                         handle.remove();
                         resolve();
-
-                        console.log("Layer view updated");
                     }
                 });
             }
@@ -1036,7 +964,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         return currentLayerView.queryFeatures(query)
             .then(result => {
                 pointsInsideFeatureCountRef.current = result.features.length;
-                console.log(`Found ${pointsInsideFeatureCountRef.current} points inside the feature`);
                 return result.features.length;
             });
     };
@@ -1058,8 +985,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         if (reportForm) {
             reportForm.style.visibility = "hidden";
         }
-
-        console.log("Generating report...");
 
         setMapScreenshotDataArray([]);
         // Initialize an empty array to store the screenshots

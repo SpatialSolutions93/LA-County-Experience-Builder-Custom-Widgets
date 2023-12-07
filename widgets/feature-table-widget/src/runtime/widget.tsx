@@ -4,6 +4,7 @@ import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import FeatureTable from "@arcgis/core/widgets/FeatureTable";
 import { CSSProperties } from 'react';
+import Draggable from 'react-draggable';
 import './widgetStyles.css';
 
 const { useRef, useState, useEffect } = React;
@@ -36,20 +37,12 @@ const FeatureTableWidget = () => {
 
         LACountyWebMap.load().then(() => {
 
-            console.log("Loaded WebMap: ", LACountyWebMap);
-
             const schools = LACountyWebMap.layers.getItemAt(1) as GroupLayer;
             const greenAndGardenSpaces = LACountyWebMap.layers.getItemAt(2) as GroupLayer;
             const retailFoodOutlets = LACountyWebMap.layers.getItemAt(6) as GroupLayer;
             const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
-
-            console.log("Loaded Schools Group Layer: ", retailFoodOutlets);
-
             const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
             const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
-
-            console.log("Loaded Retail Food Markets Group Layer: ", retailFoodMarkets_GroupLayer);
-
             const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(1) as FeatureLayer;
             const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
             const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
@@ -64,105 +57,63 @@ const FeatureTableWidget = () => {
             const retailFoodMarkets_loading = retailFoodMarkets_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(0) as FeatureLayer;
 
-            console.log(" Loaded restaurants_loading: ", restaurants_loading);
-
             // Ensure the layer is fully loaded before using it
             farmersMarkets_loading.load().then(() => {
                 setFarmersMarkets(farmersMarkets_loading);
-                console.log("Loaded layer: ", farmersMarkets_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", farmersMarkets_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             calFreshFoodRetailer_loading.load().then(() => {
                 setCalFreshFoodRetailer(calFreshFoodRetailer_loading);
-                console.log("Loaded layer: ", calFreshFoodRetailer_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", calFreshFoodRetailer_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             calFreshRestaurant_loading.load().then(() => {
                 setCalFreshRestaurant(calFreshRestaurant_loading);
-                console.log("Loaded layer: ", calFreshRestaurant_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", calFreshRestaurant_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             communityGardens_loading.load().then(() => {
                 setCommunityGardens(communityGardens_loading);
-                console.log("Loaded layer: ", communityGardens_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", communityGardens_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             foodPantry_loading.load().then(() => {
                 setFoodPantry(foodPantry_loading);
-                console.log("Loaded layer: ", foodPantry_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", foodPantry_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             parks_loading.load().then(() => {
                 setParks(parks_loading);
-                console.log("Loaded layer: ", parks_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", parks_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             parksAndGardens_loading.load().then(() => {
                 setParksAndGardens(parksAndGardens_loading);
-                console.log("Loaded layer: ", parksAndGardens_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", parksAndGardens_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             publicElementarySchools_loading.load().then(() => {
                 setPublicElementarySchools(publicElementarySchools_loading);
-                console.log("Loaded layer: ", publicElementarySchools_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", publicElementarySchools_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             publicHighSchools_loading.load().then(() => {
                 setPublicHighSchools(publicHighSchools_loading);
-                console.log("Loaded layer: ", publicHighSchools_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", publicHighSchools_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             publicMiddleSchools_loading.load().then(() => {
                 setPublicMiddleSchools(publicMiddleSchools_loading);
-                console.log("Loaded layer: ", publicMiddleSchools_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", publicMiddleSchools_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
@@ -172,10 +123,6 @@ const FeatureTableWidget = () => {
                 restaurants_loading.definitionExpression = "PE_DESCRIPTION LIKE '%RESTAURANT%'";
 
                 setRestaurants(restaurants_loading);
-                console.log("Loaded layer: ", restaurants_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", restaurants_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
@@ -185,20 +132,12 @@ const FeatureTableWidget = () => {
                 retailFoodMarkets_loading.definitionExpression = "PE_DESCRIPTION LIKE '%FOOD MKT RETAIL%'";
 
                 setRetailFoodMarkets(retailFoodMarkets_loading);
-                console.log("Loaded layer: ", retailFoodMarkets_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", retailFoodMarkets_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
 
             wicFoodRetailer_loading.load().then(() => {
                 setWicFoodRetailer(wicFoodRetailer_loading);
-                console.log("Loaded layer: ", wicFoodRetailer_loading);
-
-                // Example of accessing a specific property
-                console.log("Layer title: ", wicFoodRetailer_loading.title);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
@@ -309,21 +248,25 @@ const FeatureTableWidget = () => {
                 </select>
                 <button style={viewTableButtonStyle} className="esri-widget esri-widget--button" onClick={handleViewTable}>View Table</button>
             </div>
-            <div className="esri-feature-table__loader-container">
-                <button
-                    className="esri-icon esri-icon-close" // Change the class to the close icon
-                    onClick={handleBackButton}
-                    style={closeButtonStyle}
-                ></button>
-            </div>
-            <div
-                ref={tableContainerRef}
-                style={{
-                    width: '100%',
-                    height: '500px',
-                    display: isFeatureTableContainerVisible ? 'flex' : 'none' // Control visibility here
-                }}
-            ></div>
+            <Draggable>
+                <div>
+                    <div className="esri-feature-table__loader-container">
+                        <button
+                            className="esri-icon esri-icon-close" // Change the class to the close icon
+                            onClick={handleBackButton}
+                            style={closeButtonStyle}
+                        ></button>
+                    </div>
+                    <div
+                        ref={tableContainerRef}
+                        style={{
+                            width: '100%',
+                            height: '500px',
+                            display: isFeatureTableContainerVisible ? 'flex' : 'none' // Control visibility here
+                        }}
+                    ></div>
+                </div>
+            </Draggable>
         </div>
     );
 }
