@@ -80,6 +80,8 @@ const BufferAnalysis = (props) => {
     useEffect(() => {
         if (!jimuMapView) return;
 
+        loadRoadsNetwork();
+
         // Map click handler
         const clickHandler = jimuMapView.view.on('click', (event) => {
             if (mapInteractionEnabled) {
@@ -140,6 +142,60 @@ const BufferAnalysis = (props) => {
     const onSelectLocationClick = () => {
         setMapInteractionEnabled(true);
         setShowBanner(true);
+    };
+
+    // Function to load the roads network
+    const loadRoadsNetwork = async () => {
+        try {
+            console.time('loadRoadsNetwork');
+
+            const [FeatureLayer] = await loadArcGISJSAPIModules(['esri/layers/FeatureLayer']);
+
+            // LA County boundary layer
+            const laCountyLayer = new FeatureLayer({
+                url: 'https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Open_Data/MapServer/13'
+            });
+            await laCountyLayer.load();
+            const laCountyQuery = laCountyLayer.createQuery();
+            laCountyQuery.where = '1=1';
+            laCountyQuery.returnGeometry = true;
+            const laCountyResult = await laCountyLayer.queryFeatures(laCountyQuery);
+            const laCountyGeometry = laCountyResult.features[0].geometry;
+
+            // Roads layer
+            const roadsLayer = new FeatureLayer({
+                url: 'https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/All_Roads/FeatureServer/0'
+            });
+            await roadsLayer.load();
+
+            let offset = 0;
+            let totalFeaturesCount = 0;
+            let moreDataExists = true;
+
+            while (moreDataExists) {
+                const query = roadsLayer.createQuery();
+                query.geometry = laCountyGeometry;
+                query.spatialRelationship = "intersects";
+                query.outFields = ['RouteId'];
+                query.returnGeometry = true;
+                query.num = 1000;  // Adjust as needed
+                query.start = offset;
+
+                const featureSet = await roadsLayer.queryFeatures(query);
+                const featuresCount = featureSet.features.length;
+                totalFeaturesCount += featuresCount;
+
+                offset += featuresCount; // Adjust offset based on the actual count
+                console.log('Offset:', offset);
+                console.log('Features count:', totalFeaturesCount);
+            }
+
+            console.log('Total number of features in LA County:', totalFeaturesCount);
+            console.timeEnd('loadRoadsNetwork');
+
+        } catch (error) {
+            console.error('Error loading roads network:', error);
+        }
     };
 
     return (

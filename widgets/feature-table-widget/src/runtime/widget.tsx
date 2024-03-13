@@ -43,11 +43,11 @@ const FeatureTableWidget = () => {
             const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
             const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
             const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
-            const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(1) as FeatureLayer;
-            const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
-            const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
+            const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(0) as FeatureLayer;
+            const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
+            const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
             const communityGardens_loading = greenAndGardenSpaces.layers.getItemAt(2) as FeatureLayer;
-            const foodPantry_loading = foodAssistanceAndBenefits.layers.getItemAt(1) as FeatureLayer;
+            const foodPantry_loading = foodAssistanceAndBenefits.layers.getItemAt(0) as FeatureLayer;
             const parks_loading = greenAndGardenSpaces.layers.getItemAt(1) as FeatureLayer;
             const parksAndGardens_loading = greenAndGardenSpaces.layers.getItemAt(0) as FeatureLayer;
             const publicElementarySchools_loading = schools.layers.getItemAt(2) as FeatureLayer;
@@ -55,7 +55,7 @@ const FeatureTableWidget = () => {
             const publicMiddleSchools_loading = schools.layers.getItemAt(1) as FeatureLayer;
             const restaurants_loading = restaurants_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const retailFoodMarkets_loading = retailFoodMarkets_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(0) as FeatureLayer;
+            const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(1) as FeatureLayer;
 
             // Ensure the layer is fully loaded before using it
             farmersMarkets_loading.load().then(() => {

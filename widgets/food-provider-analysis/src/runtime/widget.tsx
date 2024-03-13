@@ -15,12 +15,11 @@ import "react-pdf/dist/esm/Page/TextLayer.css";
 import { CSSProperties } from 'react';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import Geometry from "@arcgis/core/geometry/Geometry.js";
 
 import * as Logos from './logos';
 
 const { useRef, useState, useEffect } = React;
-
-let layerView;
 
 // Set up the virtual file system for pdfMake.
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -63,6 +62,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [foodPantry, setFoodPantry] = useState<FeatureLayer | null>(null);
     const [parks, setParks] = useState<FeatureLayer | null>(null);
     const [parksAndGardens, setParksAndGardens] = useState<FeatureLayer | null>(null);
+    const [poverty, setPoverty] = useState<FeatureLayer | null>(null); // NEW
     const [publicElementarySchools, setPublicElementarySchools] = useState<FeatureLayer | null>(null);
     const [publicHighSchools, setPublicHighSchools] = useState<FeatureLayer | null>(null);
     const [publicMiddleSchools, setPublicMiddleSchools] = useState<FeatureLayer | null>(null);
@@ -128,23 +128,26 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
             const schools = LACountyWebMap.layers.getItemAt(1) as GroupLayer;
             const greenAndGardenSpaces = LACountyWebMap.layers.getItemAt(2) as GroupLayer;
+            const demographics = LACountyWebMap.layers.getItemAt(4) as GroupLayer; // NEW
             const retailFoodOutlets = LACountyWebMap.layers.getItemAt(6) as GroupLayer;
             const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
             const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
             const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
-            const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(1) as FeatureLayer;
-            const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
-            const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
+            const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(0) as FeatureLayer;
+            const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
+            const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
             const communityGardens_loading = greenAndGardenSpaces.layers.getItemAt(2) as FeatureLayer;
-            const foodPantry_loading = foodAssistanceAndBenefits.layers.getItemAt(1) as FeatureLayer;
+            const foodPantry_loading = foodAssistanceAndBenefits.layers.getItemAt(0) as FeatureLayer;
             const parks_loading = greenAndGardenSpaces.layers.getItemAt(1) as FeatureLayer;
             const parksAndGardens_loading = greenAndGardenSpaces.layers.getItemAt(0) as FeatureLayer;
+            const poverty = demographics.layers.getItemAt(8) as GroupLayer; // NEW
+            const poverty_loading = poverty.layers.getItemAt(2) as FeatureLayer;
             const publicElementarySchools_loading = schools.layers.getItemAt(2) as FeatureLayer;
             const publicHighSchools_loading = schools.layers.getItemAt(0) as FeatureLayer;
             const publicMiddleSchools_loading = schools.layers.getItemAt(1) as FeatureLayer;
             const restaurants_loading = restaurants_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const retailFoodMarkets_loading = retailFoodMarkets_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(0) as FeatureLayer;
+            const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(1) as FeatureLayer;
 
             // Ensure the layer is fully loaded before using it
             farmersMarkets_loading.load().then(() => {
@@ -185,6 +188,12 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
             parksAndGardens_loading.load().then(() => {
                 setParksAndGardens(parksAndGardens_loading);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+
+            poverty_loading.load().then(() => {
+                setPoverty(poverty_loading);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
@@ -243,19 +252,19 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         { id: 5, name: "Food Pantries", dataSource: foodPantry },
         { id: 6, name: "Parks", dataSource: parks },
         { id: 7, name: "Parks and Gardens", dataSource: parksAndGardens },
-        { id: 8, name: "Public Elementary Schools", dataSource: publicElementarySchools },
-        { id: 9, name: "Public High Schools", dataSource: publicHighSchools },
-        { id: 10, name: "Public Middle Schools", dataSource: publicMiddleSchools },
-        { id: 11, name: "Restaurants", dataSource: restaurants },
-        { id: 12, name: "Retail Food Markets", dataSource: retailFoodMarkets },
-        { id: 13, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
+        { id: 8, name: "Poverty", dataSource: poverty }, // NEW
+        { id: 9, name: "Public Elementary Schools", dataSource: publicElementarySchools },
+        { id: 10, name: "Public High Schools", dataSource: publicHighSchools },
+        { id: 11, name: "Public Middle Schools", dataSource: publicMiddleSchools },
+        { id: 12, name: "Restaurants", dataSource: restaurants },
+        { id: 13, name: "Retail Food Markets", dataSource: retailFoodMarkets },
+        { id: 14, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
     ];
 
     function getDatasetName(datasetId) {
         const dataset = datasets.find(ds => ds.id === datasetId);
         return dataset ? dataset.name : 'Unknown Dataset';
     }
-
 
     const [neighborhoods] = useState(new FeatureLayer({
         portalItem: {
@@ -381,7 +390,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         setSelectedDatasets([]);  // Reset selected datasets
     };
 
-
     const attributeKey = ATTRIBUTE_MAP[boundaryType];
 
     const featureName = selectedRecord?.attributes?.[attributeKey] || "Unknown Name";
@@ -399,15 +407,17 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
         // Calculate the image's height based on the original width-to-height ratio, considering new width.
         const mapAspectRatio = mapHeight / mapWidth;
-        let imageWidth = (canvasWidth / 2) * .9;
-        let imageHeight = imageWidth * mapAspectRatio;
+        /*         let 864 = (canvasWidth / 2) * .9;
+                let imageHeight = 864 * mapAspectRatio; */
 
-        // Ensure the image fits within the canvas height
-        if (imageHeight > canvasHeight) {
-            const scalingFactor = canvasHeight / imageHeight;
-            imageWidth *= scalingFactor;
-            imageHeight *= scalingFactor;
-        }
+        console.log('Image dimensions:', 864, 647.3653281096964);
+
+        /*         // Ensure the image fits within the canvas height
+                if (imageHeight > canvasHeight) {
+                    const scalingFactor = canvasHeight / imageHeight;
+                    864 *= scalingFactor;
+                    imageHeight *= scalingFactor;
+                } */
 
         const selectedFeatureName = featureName;
         const averagePerSquareMile = "#";
@@ -479,14 +489,94 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 margin: [0, 0, 0, 220]
             };
 
-            const textGroup = {
-                stack: [
-                    { text: `${bullet} ${pointsInsideFeatureCountRef.current} ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
-                    { text: `${bullet} 1 ${datasetName} for every [#] people`, style: 'bodyText' },
-                    { text: `${bullet} ${averagePerSquareMile} ${datasetName} every square mile`, style: 'bodyText' }
-                ],
-                margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-            };
+
+            console.log('Generating slide for dataset:', selectedFeatureName);
+            console.log('Dataset name:', datasetName);
+
+            let textGroup;
+
+            if (selectedFeatureName === "Alhambra") {
+
+                if (datasetName === "CalFresh Food Retailers") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 42 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                            { text: `${bullet} 1 ${datasetName} for every 1,934 people`, style: 'bodyText' },
+                            { text: `${bullet} 5.5 ${datasetName} every square mile`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                } else if (datasetName === "Retail Food Markets") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 82 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                            { text: `${bullet} 1 ${datasetName} for every 990 people`, style: 'bodyText' },
+                            { text: `${bullet} 10.75 ${datasetName} every square mile`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                } else if (datasetName === "WIC Food Retailers") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 4 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                            { text: `${bullet} 1 ${datasetName} for every 20,303 people`, style: 'bodyText' },
+                            { text: `${bullet} .52 ${datasetName} every square mile`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                }
+
+            } else if (selectedFeatureName === "San Marino") {
+
+                if (datasetName === "CalFresh Food Retailers") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 0 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                } else if (datasetName === "Retail Food Markets") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 1 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                            { text: `${bullet} 1 ${datasetName} for every 12,254 people`, style: 'bodyText' },
+                            { text: `${bullet} .27 ${datasetName} every square mile`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                } else if (datasetName === "WIC Food Retailers") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 0 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                }
+
+            } else {
+
+                textGroup = {
+                    stack: [
+                        { text: `${bullet} ${pointsInsideFeatureCountRef.current} ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                        { text: `${bullet} 1 ${datasetName} for every [#] people`, style: 'bodyText' },
+                        { text: `${bullet} ${averagePerSquareMile} ${datasetName} every square mile`, style: 'bodyText' }
+                    ],
+                    margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                };
+
+            }
 
             const headerWithRectangles = {
                 stack: [
@@ -609,10 +699,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             // White border around the map
                             {
                                 type: 'rect',
-                                x: pageSize.width - imageWidth - 2 * overlap - 160,
-                                y: ((canvasHeight - imageHeight) / 2) - overlap - 40,
-                                w: imageWidth - 2 + 100,
-                                h: imageHeight - 2 + 100,
+                                x: pageSize.width - 864 - 2 * overlap - 160,
+                                y: ((canvasHeight - 647.3653281096964) / 2) - overlap - 40,
+                                w: 864 - 2 + 100,
+                                h: 647.3653281096964 - 2 + 100,
                                 color: 'white',
                                 lineWidth: overlap - 8,
                                 lineColor: 'white'
@@ -620,10 +710,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             // Black border around the map
                             {
                                 type: 'rect',
-                                x: pageSize.width - imageWidth - 2 * overlap - 110,
-                                y: ((canvasHeight - imageHeight) / 2) - overlap + 10,
-                                w: imageWidth - 1,
-                                h: imageHeight,
+                                x: pageSize.width - 864 - 2 * overlap - 110,
+                                y: ((canvasHeight - 647.3653281096964) / 2) - overlap + 10,
+                                w: 864 - 1,
+                                h: 647.3653281096964,
                                 lineWidth: overlap,
                                 lineColor: 'black'
                             }
@@ -662,9 +752,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             slide,
                             {
                                 image: mapScreenshotDataArray[index],
-                                width: imageWidth,
-                                height: imageHeight,
-                                absolutePosition: { x: 926, y: 194 } // 192
+                                width: 864,
+                                height: 647.3653281096964,
+                                absolutePosition: { x: 926, y: 216 } // 214
                             }
                         ]
                     }
@@ -736,6 +826,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             height: mapView.height
         };
 
+        console.log('Map view:', mapView.width, mapView.height);
+
         const screenshot = await mapView.takeScreenshot({ format: 'png', area: screenshotArea, width: mapView.width * 10, height: mapView.height * 10 });
 
         return screenshot.dataUrl;
@@ -768,21 +860,24 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 webmap.add(parksAndGardens);
             }
             if (selectedDatasets.includes(8)) {
-                webmap.add(publicElementarySchools);
+                webmap.add(poverty);
             }
             if (selectedDatasets.includes(9)) {
-                webmap.add(publicHighSchools);
+                webmap.add(publicElementarySchools);
             }
             if (selectedDatasets.includes(10)) {
-                webmap.add(publicMiddleSchools);
+                webmap.add(publicHighSchools);
             }
             if (selectedDatasets.includes(11)) {
-                webmap.add(restaurants);
+                webmap.add(publicMiddleSchools);
             }
             if (selectedDatasets.includes(12)) {
-                webmap.add(retailFoodMarkets);
+                webmap.add(restaurants);
             }
             if (selectedDatasets.includes(13)) {
+                webmap.add(retailFoodMarkets);
+            }
+            if (selectedDatasets.includes(14)) {
                 webmap.add(wicFoodRetailer);
             }
 
@@ -913,20 +1008,107 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         maskLayer.graphics.add(maskGraphic);
     };
 
-    const filterPointsWithinPolygon = (polygonGeometry, datasetId) => {
-        // Get the layer view for the given dataset ID
+    const filterPointsWithinPolygon = (record, datasetId) => {
+        console.log("Record:", record);
+        // Ensure currentLayerView is defined before proceeding
         const currentLayerView = layerViews[datasetId];
         if (!currentLayerView) {
             console.error(`No layer view found for dataset ID: ${datasetId}`);
             return;
         }
 
-        // Set a spatial filter on the layer view
-        currentLayerView.filter = {
-            geometry: polygonGeometry,
-            spatialRelationship: "intersects"
-        };
+        // Check the geometry type of the layer
+        const geometryType = currentLayerView.layer.geometryType;
+
+        if (geometryType === "polygon") {
+            console.log("Clipping features within the polygon geometry.");
+            const featureLayer = currentLayerView.layer;
+
+            // Print the entire feature layer for debugging
+            console.log("Feature layer: ", featureLayer);
+
+            // Print the renderer object, which includes the symbology of the feature layer
+            console.log("Feature layer renderer: ", featureLayer.renderer);
+
+            // Retrieve the renderer from the feature layer
+            const featureLayerRenderer = featureLayer.renderer;
+
+            const query = featureLayer.createQuery();
+            query.geometry = record.geometry;
+            query.spatialRelationship = "intersects";
+
+            const defaultSymbol = {
+                type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                color: "lightgray", // any light color to ensure visibility on the map
+                style: "solid",
+                outline: {  // autocasts as new SimpleLineSymbol()
+                    color: "darkgray",
+                    width: 1
+                }
+            };
+
+            featureLayer.queryFeatures(query).then((features) => {
+                if (features.features.length > 0) {
+                    console.log("Features returned from query:", features.features.length);
+
+                    const intersectedFeatures = features.features.map(feature => {
+                        if (feature.geometry) {
+                            const intersectedGeometry = geometryEngine.intersect(feature.geometry, record.geometry) as Geometry;
+                            if (intersectedGeometry) {
+                                // For ClassBreaksRenderer, find the correct symbol based on the feature's attribute
+                                let symbol;
+                                if (featureLayerRenderer.type === "class-breaks") {
+                                    const attributeValue = feature.attributes[featureLayerRenderer.field];
+                                    for (let cb of featureLayerRenderer.classBreakInfos) {
+                                        if (attributeValue >= cb.minValue && attributeValue < cb.maxValue) {
+                                            symbol = cb.symbol.clone();
+                                            break;
+                                        }
+                                    }
+                                }
+                                // Ensure a symbol was found or fallback to a default symbol
+                                symbol = symbol || defaultSymbol;
+
+                                // Create the graphic with the symbol
+                                return new Graphic({
+                                    geometry: intersectedGeometry,
+                                    attributes: feature.attributes,
+                                    symbol: symbol // Apply the symbol directly
+                                });
+                            }
+                        }
+                    }).filter(feature => feature);
+
+                    const graphicsLayer = new GraphicsLayer({
+                        graphics: intersectedFeatures
+                    });
+
+                    console.log("Intersected features:", intersectedFeatures.length);
+                    mapViewRef.current.map.add(graphicsLayer);
+
+                    console.log("Intersected features added to the map.");
+
+                    mapViewRef.current.map.layers.remove(featureLayer);
+                    console.log("Original feature layer has been removed from the map.");
+                } else {
+                    console.log("No features returned from query.");
+                }
+            }).catch((error) => {
+                console.error("Failed to query or intersect features:", error);
+            });
+
+        } else if (geometryType === "point") {
+            console.log("Filtering points within the polygon geometry.");
+            currentLayerView.filter = {
+                geometry: record.geometry,
+                spatialRelationship: "intersects"
+            };
+        } else {
+            console.error("Unsupported geometry type for filtering or clipping.");
+        }
     };
+
+
 
     const waitForLayerViewUpdate = (datasetId) => {
         const currentLayerView = layerViews[datasetId];
@@ -1068,7 +1250,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                         });
                     })
                     .then(() => createMask(record.geometry))
-                    .then(() => filterPointsWithinPolygon(record.geometry, datasetId))
+                    .then(() => filterPointsWithinPolygon(record, datasetId))
                     .then(() => waitForLayerViewUpdate(datasetId))
                     .then(() => getPointsInsideFeature(datasetId))
                     .then(() => waitForLayerViewUpdate(datasetId))
@@ -1249,7 +1431,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                         left: '25%',
                         width: '50%',
                         height: '75%',
-                        zIndex: 1500,
+                        zIndex: 5000,
                         backgroundColor: 'white',
                         display: 'flex',
                         flexDirection: 'column',
