@@ -17,7 +17,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Geometry from "@arcgis/core/geometry/Geometry.js";
 import Legend from "@arcgis/core/widgets/Legend.js";
-import html2canvas from 'html2canvas';
+
 import * as Logos from './logos';
 
 const { useRef, useState, useEffect } = React;
@@ -70,38 +70,17 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [restaurants, setRestaurants] = useState<FeatureLayer | null>(null);
     const [retailFoodMarkets, setRetailFoodMarkets] = useState<FeatureLayer | null>(null);
     const [wicFoodRetailer, setWicFoodRetailer] = useState<FeatureLayer | null>(null);
-    const [calFreshCases, setCalFreshCases] = useState<FeatureLayer | null>(null);
-    const [calFreshGap, setCalFreshGap] = useState<FeatureLayer | null>(null);
-    const [groceryStoresSupermarkets, setGroceryStoresSupermarkets] = useState<FeatureLayer | null>(null);
-    const [foodInsecurity, setFoodInsecurity] = useState<FeatureLayer | null>(null);
-    const [obesity, setObesity] = useState<FeatureLayer | null>(null);
-    const [diabetes, setDiabetes] = useState<FeatureLayer | null>(null);
-    const [heartDisease, setHeartDisease] = useState<FeatureLayer | null>(null);
-    const [depression, setDepression] = useState<FeatureLayer | null>(null);
-    const [income, setIncome] = useState<FeatureLayer | null>(null);
-    const [hispanic, setHispanic] = useState<FeatureLayer | null>(null);
-    const [englishSecondLanguage, setEnglishSecondLanguage] = useState<FeatureLayer | null>(null);
-    const [immigrationStatus, setImmigrationStatus] = useState<FeatureLayer | null>(null);
-    const [vehicleOwnershipLandowners, setVehicleOwnershipLandowners] = useState<FeatureLayer | null>(null);
-    const [vehicleOwnershipRenters, setVehicleOwnershipRenters] = useState<FeatureLayer | null>(null);
-    const [householdSize, setHouseholdSize] = useState<FeatureLayer | null>(null);
-    const [disability, setDisability] = useState<FeatureLayer | null>(null);
-    const [healthInsurance, setHealthInsurance] = useState<FeatureLayer | null>(null);
-    const [healthyPlacesIndex, setHealthyPlacesIndex] = useState<FeatureLayer | null>(null);
-    const [socialVulnerabilityIndex, setSocialVulnerabilityIndex] = useState<FeatureLayer | null>(null);
-    const [redlining, setRedlining] = useState<FeatureLayer | null>(null);
 
     const pointsInsideFeatureCountRef = React.useRef(null);
 
     const mapStyle: CSSProperties = {
         position: 'absolute',
-        top: '25%',
-        left: '25%',
-        width: '669.12px',
-        height: '500px',
+        top: '20%',
+        width: '100%',
+        height: '100%',
         backgroundColor: 'white',
-        border: '0px solid black',
-        visibility: 'hidden',
+        border: '1px solid black',
+        visibility: 'hidden'
     };
 
     const reportButtonStyle: CSSProperties = {
@@ -154,9 +133,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             const retailFoodOutlets = LACountyWebMap.layers.getItemAt(6) as GroupLayer;
             const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
             const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
-            const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(5) as GroupLayer;
             const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
-            const neightborhoodCharacteristics_GroupLayer = LACountyWebMap.layers.getItemAt(3) as GroupLayer;
             const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(0) as FeatureLayer;
             const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
             const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
@@ -165,35 +142,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             const parks_loading = greenAndGardenSpaces.layers.getItemAt(1) as FeatureLayer;
             const parksAndGardens_loading = greenAndGardenSpaces.layers.getItemAt(0) as FeatureLayer;
             const poverty = demographics.layers.getItemAt(8) as GroupLayer; // NEW
-            const poverty_loading = poverty.layers.getItemAt(5) as FeatureLayer;
+            const poverty_loading = poverty.layers.getItemAt(2) as FeatureLayer;
             const publicElementarySchools_loading = schools.layers.getItemAt(2) as FeatureLayer;
             const publicHighSchools_loading = schools.layers.getItemAt(0) as FeatureLayer;
             const publicMiddleSchools_loading = schools.layers.getItemAt(1) as FeatureLayer;
             const restaurants_loading = restaurants_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const retailFoodMarkets_loading = retailFoodMarkets_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(1) as FeatureLayer;
-            const calFreshCases_loading = foodAssistanceAndBenefits.layers.getItemAt(5) as FeatureLayer;
-            const calFreshGap_loading = foodAssistanceAndBenefits.layers.getItemAt(4) as FeatureLayer;
-            const groceryStoresSupermarkets_loading = retailFoodOutlets.layers.getItemAt(1) as FeatureLayer;
-            const foodInsecurity_loading = residentHealth_GroupLayer.layers.getItemAt(4) as FeatureLayer;
-            const obesity_loading = residentHealth_GroupLayer.layers.getItemAt(3) as FeatureLayer;
-            const diabetes_loading = residentHealth_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const heartDisease_loading = residentHealth_GroupLayer.layers.getItemAt(1) as FeatureLayer;
-            const depression_loading = residentHealth_GroupLayer.layers.getItemAt(0) as FeatureLayer;
-            const income_group_loading = demographics.layers.getItemAt(9) as GroupLayer;
-            const income_loading = income_group_loading.layers.getItemAt(5) as FeatureLayer;
-            const hispanic_group_loading = demographics.layers.getItemAt(7) as GroupLayer;
-            const hispanic_loading = hispanic_group_loading.layers.getItemAt(5) as FeatureLayer;
-            const englishSecondLanguage_loading = demographics.layers.getItemAt(6) as FeatureLayer;
-            const immigrationStatus_loading = demographics.layers.getItemAt(5) as FeatureLayer;
-            const vehicleOwnershipRenters_loading = demographics.layers.getItemAt(3) as FeatureLayer;
-            const vehicleOwnershipLandowners_loading = demographics.layers.getItemAt(4) as FeatureLayer;
-            const householdSize_loading = demographics.layers.getItemAt(2) as FeatureLayer;
-            const disability_loading = demographics.layers.getItemAt(1) as FeatureLayer;
-            const healthInsurance_loading = demographics.layers.getItemAt(0) as FeatureLayer;
-            const healthyPlacesIndex_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const socialVulnerabilityIndex_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(1) as FeatureLayer;
-            const redlining_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(0) as FeatureLayer;
 
             // Ensure the layer is fully loaded before using it
             farmersMarkets_loading.load().then(() => {
@@ -285,148 +240,26 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
-
-            calFreshCases_loading.load().then(() => {
-                setCalFreshCases(calFreshCases_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            calFreshGap_loading.load().then(() => {
-                setCalFreshGap(calFreshGap_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            groceryStoresSupermarkets_loading.load().then(() => {
-                setGroceryStoresSupermarkets(groceryStoresSupermarkets_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            foodInsecurity_loading.load().then(() => {
-                setFoodInsecurity(foodInsecurity_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            obesity_loading.load().then(() => {
-                setObesity(obesity_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            diabetes_loading.load().then(() => {
-                setDiabetes(diabetes_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            heartDisease_loading.load().then(() => {
-                setHeartDisease(heartDisease_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            depression_loading.load().then(() => {
-                setDepression(depression_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            income_loading.load().then(() => {
-                setIncome(income_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            hispanic_loading.load().then(() => {
-                setHispanic(hispanic_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            englishSecondLanguage_loading.load().then(() => {
-                setEnglishSecondLanguage(englishSecondLanguage_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            immigrationStatus_loading.load().then(() => {
-                setImmigrationStatus(immigrationStatus_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            vehicleOwnershipRenters_loading.load().then(() => {
-                setVehicleOwnershipRenters(vehicleOwnershipRenters_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            vehicleOwnershipLandowners_loading.load().then(() => {
-                setVehicleOwnershipLandowners(vehicleOwnershipLandowners_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            householdSize_loading.load().then(() => {
-                setHouseholdSize(householdSize_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            disability_loading.load().then(() => {
-                setDisability(disability_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            healthInsurance_loading.load().then(() => {
-                setHealthInsurance(healthInsurance_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            healthyPlacesIndex_loading.load().then(() => {
-                setHealthyPlacesIndex(healthyPlacesIndex_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            socialVulnerabilityIndex_loading.load().then(() => {
-                setSocialVulnerabilityIndex(socialVulnerabilityIndex_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-            redlining_loading.load().then(() => {
-                setRedlining(redlining_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
-
         }).catch(error => {
             console.error("Error loading WebMap: ", error);
         });
     }, []);
 
     const datasets = [
-        { id: 1, name: "CalFresh Cases", dataSource: calFreshCases },
-        { id: 2, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
-        { id: 3, name: "CalFresh Gap", dataSource: calFreshGap },
-        { id: 4, name: "CalFresh Restaurants", dataSource: calFreshRestaurant },
-        { id: 5, name: "Community Gardens", dataSource: communityGardens },
-        { id: 6, name: "Depression", dataSource: depression },
-        { id: 7, name: "Diabetes", dataSource: diabetes },
-        { id: 8, name: "Disability", dataSource: disability },
-        { id: 9, name: "English Second Language", dataSource: englishSecondLanguage },
-        { id: 10, name: "Farmer's Markets", dataSource: farmersMarkets },
-        { id: 11, name: "Food Insecurity", dataSource: foodInsecurity },
-        { id: 12, name: "Food Pantries", dataSource: foodPantry },
-        { id: 13, name: "Grocery Stores/Supermarkets", dataSource: groceryStoresSupermarkets },
-        { id: 14, name: "Health Insurance", dataSource: healthInsurance },
-        { id: 15, name: "Healthy Places Index", dataSource: healthyPlacesIndex },
-        { id: 16, name: "Heart Disease", dataSource: heartDisease },
-        { id: 17, name: "Hispanic or Latino", dataSource: hispanic },
-        { id: 18, name: "Household Size", dataSource: householdSize },
-        { id: 19, name: "Immigration Status", dataSource: immigrationStatus },
-        { id: 20, name: "Income", dataSource: income },
-        { id: 21, name: "Obesity", dataSource: obesity },
-        { id: 22, name: "Parks", dataSource: parks },
-        { id: 23, name: "Parks and Gardens", dataSource: parksAndGardens },
-        { id: 24, name: "Poverty", dataSource: poverty }, // NEW
-        { id: 25, name: "Public Elementary Schools", dataSource: publicElementarySchools },
-        { id: 26, name: "Public High Schools", dataSource: publicHighSchools },
-        { id: 27, name: "Public Middle Schools", dataSource: publicMiddleSchools },
-        { id: 28, name: "Redlining", dataSource: redlining },
-        { id: 29, name: "Restaurants", dataSource: restaurants },
-        { id: 30, name: "Retail Food Markets", dataSource: retailFoodMarkets },
-        { id: 31, name: "Social Vulnerability Index", dataSource: socialVulnerabilityIndex },
-        { id: 32, name: "Vehicle Ownership (Landowners)", dataSource: vehicleOwnershipLandowners },
-        { id: 33, name: "Vehicle Ownership (Renters)", dataSource: vehicleOwnershipRenters },
-        { id: 34, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
+        { id: 1, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
+        { id: 2, name: "CalFresh Restaurants", dataSource: calFreshRestaurant },
+        { id: 3, name: "Community Gardens", dataSource: communityGardens },
+        { id: 4, name: "Farmer's Markets", dataSource: farmersMarkets },
+        { id: 5, name: "Food Pantries", dataSource: foodPantry },
+        { id: 6, name: "Parks", dataSource: parks },
+        { id: 7, name: "Parks and Gardens", dataSource: parksAndGardens },
+        { id: 8, name: "Poverty", dataSource: poverty }, // NEW
+        { id: 9, name: "Public Elementary Schools", dataSource: publicElementarySchools },
+        { id: 10, name: "Public High Schools", dataSource: publicHighSchools },
+        { id: 11, name: "Public Middle Schools", dataSource: publicMiddleSchools },
+        { id: 12, name: "Restaurants", dataSource: restaurants },
+        { id: 13, name: "Retail Food Markets", dataSource: retailFoodMarkets },
+        { id: 14, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
     ];
 
     function getDatasetName(datasetId) {
@@ -1007,138 +840,45 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         if (mapViewRef.current) {
 
             if (selectedDatasets.includes(1)) {
-                webmap.add(calFreshCases);
-            }
-
-            if (selectedDatasets.includes(2)) {
                 webmap.add(calFreshFoodRetailer);
             }
-
-            if (selectedDatasets.includes(3)) {
-                webmap.add(calFreshGap);
-            }
-
-            if (selectedDatasets.includes(4)) {
+            if (selectedDatasets.includes(2)) {
                 webmap.add(calFreshRestaurant);
             }
-
-            if (selectedDatasets.includes(5)) {
+            if (selectedDatasets.includes(3)) {
                 webmap.add(communityGardens);
             }
-
-            if (selectedDatasets.includes(6)) {
-                webmap.add(depression);
-            }
-
-            if (selectedDatasets.includes(7)) {
-                webmap.add(diabetes);
-            }
-
-            if (selectedDatasets.includes(8)) {
-                webmap.add(disability);
-            }
-
-            if (selectedDatasets.includes(9)) {
-                webmap.add(englishSecondLanguage);
-            }
-
-            if (selectedDatasets.includes(10)) {
+            if (selectedDatasets.includes(4)) {
                 webmap.add(farmersMarkets);
             }
-
-            if (selectedDatasets.includes(11)) {
-                webmap.add(foodInsecurity);
-            }
-
-            if (selectedDatasets.includes(12)) {
+            if (selectedDatasets.includes(5)) {
                 webmap.add(foodPantry);
             }
-
-            if (selectedDatasets.includes(13)) {
-                webmap.add(groceryStoresSupermarkets);
-            }
-
-            if (selectedDatasets.includes(14)) {
-                webmap.add(healthInsurance);
-            }
-
-            if (selectedDatasets.includes(15)) {
-                webmap.add(healthyPlacesIndex);
-            }
-
-            if (selectedDatasets.includes(16)) {
-                webmap.add(heartDisease);
-            }
-
-            if (selectedDatasets.includes(17)) {
-                webmap.add(hispanic);
-            }
-
-            if (selectedDatasets.includes(18)) {
-                webmap.add(householdSize);
-            }
-
-            if (selectedDatasets.includes(19)) {
-                webmap.add(immigrationStatus);
-            }
-
-            if (selectedDatasets.includes(20)) {
-                webmap.add(income);
-            }
-
-            if (selectedDatasets.includes(21)) {
-                webmap.add(obesity);
-            }
-
-            if (selectedDatasets.includes(22)) {
+            if (selectedDatasets.includes(6)) {
                 webmap.add(parks);
             }
-
-            if (selectedDatasets.includes(23)) {
+            if (selectedDatasets.includes(7)) {
                 webmap.add(parksAndGardens);
             }
-
-            if (selectedDatasets.includes(24)) {
+            if (selectedDatasets.includes(8)) {
                 webmap.add(poverty);
             }
-
-            if (selectedDatasets.includes(25)) {
+            if (selectedDatasets.includes(9)) {
                 webmap.add(publicElementarySchools);
             }
-
-            if (selectedDatasets.includes(26)) {
+            if (selectedDatasets.includes(10)) {
                 webmap.add(publicHighSchools);
             }
-
-            if (selectedDatasets.includes(27)) {
+            if (selectedDatasets.includes(11)) {
                 webmap.add(publicMiddleSchools);
             }
-
-            if (selectedDatasets.includes(28)) {
-                webmap.add(redlining);
-            }
-
-            if (selectedDatasets.includes(29)) {
+            if (selectedDatasets.includes(12)) {
                 webmap.add(restaurants);
             }
-
-            if (selectedDatasets.includes(30)) {
+            if (selectedDatasets.includes(13)) {
                 webmap.add(retailFoodMarkets);
             }
-
-            if (selectedDatasets.includes(31)) {
-                webmap.add(socialVulnerabilityIndex);
-            }
-
-            if (selectedDatasets.includes(32)) {
-                webmap.add(vehicleOwnershipLandowners);
-            }
-
-            if (selectedDatasets.includes(33)) {
-                webmap.add(vehicleOwnershipRenters);
-            }
-
-            if (selectedDatasets.includes(34)) {
+            if (selectedDatasets.includes(14)) {
                 webmap.add(wicFoodRetailer);
             }
 
@@ -1225,7 +965,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
     };
 
-    const createMask = async (geometry) => {
+    const createMask = (geometry) => {
         const mapView = mapViewRef.current;
 
         // Create an instance of the GraphicsLayer
@@ -1269,7 +1009,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         maskLayer.graphics.add(maskGraphic);
     };
 
-    const filterPointsWithinPolygon = async (record, datasetId) => {
+    const filterPointsWithinPolygon = (record, datasetId) => {
         console.log("Record:", record);
         // Ensure currentLayerView is defined before proceeding
         const currentLayerView = layerViews[datasetId];
@@ -1293,7 +1033,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
             // Retrieve the renderer from the feature layer
             const featureLayerRenderer = featureLayer.renderer;
-            console.log(`Renderer type: ${featureLayerRenderer.type}`);
 
             const query = featureLayer.createQuery();
             query.geometry = record.geometry;
@@ -1309,8 +1048,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 }
             };
 
-            try {
-                const features = await featureLayer.queryFeatures(query);
+            featureLayer.queryFeatures(query).then((features) => {
                 if (features.features.length > 0) {
                     console.log("Features returned from query:", features.features.length);
 
@@ -1325,15 +1063,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                     for (let cb of featureLayerRenderer.classBreakInfos) {
                                         if (attributeValue >= cb.minValue && attributeValue < cb.maxValue) {
                                             symbol = cb.symbol.clone();
-                                            break;
-                                        }
-                                    }
-                                } else if (featureLayerRenderer.type === "unique-value") {
-                                    // For UniqueValueRenderer, find the correct symbol based on the feature's attribute value
-                                    const attributeValue = feature.attributes[featureLayerRenderer.field]; // Assuming a single field for simplicity
-                                    for (let uv of featureLayerRenderer.uniqueValueInfos) {
-                                        if (uv.value === attributeValue) {
-                                            symbol = uv.symbol.clone();
                                             break;
                                         }
                                     }
@@ -1383,9 +1112,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 } else {
                     console.log("No features returned from query.");
                 }
-            } catch (error) {
+            }).catch((error) => {
                 console.error("Failed to query or intersect features:", error);
-            }
+            });
 
         } else if (geometryType === "point") {
             console.log("Filtering points within the polygon geometry.");
@@ -1398,33 +1127,47 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
     };
 
-    const getPointsInsideFeature = async (datasetId) => {
+
+
+    const waitForLayerViewUpdate = (datasetId) => {
         const currentLayerView = layerViews[datasetId];
-        console.log("Dataset ID:", datasetId);
         if (!currentLayerView) {
             console.error(`No layer view found for dataset ID: ${datasetId}`);
             return Promise.reject(`No layer view found for dataset ID: ${datasetId}`);
         }
 
-        try {
-            console.log("Querying features for dataset ID:", datasetId);
-            console.log("Current layer view:", currentLayerView);
-
-            // Corrected: Define query parameters using the layer property of the currentLayerView
-            const query = currentLayerView.layer.createQuery(); // This line is corrected
-            query.geometry = currentLayerView.filter.geometry; // Assuming 'filter' exists and has a 'geometry' property
-            query.spatialRelationship = "intersects";
-
-            // Use the layer to perform the query
-            const result = await currentLayerView.layer.queryFeatures(query); // This might also need correction based on context
-            pointsInsideFeatureCountRef.current = result.features.length;
-            return result.features.length;
-        } catch (error) {
-            console.error(`Error querying features for dataset ID: ${datasetId}`, error);
-            return 0;
-        }
+        return new Promise<void>(resolve => {
+            if (!currentLayerView.updating) {
+                resolve();
+            } else {
+                const handle = currentLayerView.watch('updating', updating => {
+                    if (!updating) {
+                        handle.remove();
+                        resolve();
+                    }
+                });
+            }
+        });
     };
 
+    const getPointsInsideFeature = (datasetId) => {
+        const currentLayerView = layerViews[datasetId];
+        if (!currentLayerView) {
+            console.error(`No layer view found for dataset ID: ${datasetId}`);
+            return Promise.reject(`No layer view found for dataset ID: ${datasetId}`);
+        }
+
+        // Define query parameters
+        const query = currentLayerView.layer.createQuery();
+        query.geometry = currentLayerView.filter.geometry; // We use the filter geometry
+        query.spatialRelationship = "intersects";
+
+        return currentLayerView.queryFeatures(query)
+            .then(result => {
+                pointsInsideFeatureCountRef.current = result.features.length;
+                return result.features.length;
+            });
+    };
 
     function findLayerByDatasetId(datasetId) {
         const dataset = datasets.find(d => d.id === datasetId);
@@ -1515,24 +1258,24 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 }
 
                 mapView.goTo({ target: extXY })
+                    .then(() => {
+                        return new Promise<void>(resolve => {
+                            const handle = mapView.watch('updating', updating => {
+                                if (!updating) {
+                                    handle.remove();
+                                    resolve();
+                                }
+                            });
+                        });
+                    })
+                    .then(() => createMask(record.geometry))
+                    .then(() => filterPointsWithinPolygon(record, datasetId))
+                    .then(() => waitForLayerViewUpdate(datasetId))
+                    .then(() => getPointsInsideFeature(datasetId))
+                    .then(() => waitForLayerViewUpdate(datasetId))
 
-                await new Promise<void>(resolve => {
-                    const handle = mapView.watch('updating', updating => {
-                        if (!updating) {
-                            handle.remove();
-                            resolve();
-                        }
-                    });
-                });
-
-                await createMask(record.geometry);
-
-                await filterPointsWithinPolygon(record, datasetId);
-
-                await getPointsInsideFeature(datasetId);
 
                 await new Promise(resolve => setTimeout(resolve, 2000));
-
                 const dataUrl = await handleScreenshot();
 
                 // Push the screenshot data URL to the screenshots array
@@ -1595,7 +1338,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     </button>
                 </div>
 
-                <div style={mapStyle} ref={mapViewRef} id='reportMapView'>
+                <div style={mapStyle} ref={mapViewRef}>
                 </div>
                 <div className="record-list" id="reportForm" style={reportFormStyle}>
 
@@ -1733,7 +1476,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                 <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'auto' }}>
                                     <button onClick={() => setShowPDFPane(false)} style={{ margin: '10px' }}>Close</button>
                                 </div>
-                                <div style={{ width: '100%', height: '100%', overflow: 'none', pointerEvents: 'auto' }}>
+                                <div style={{ width: '100%', height: '100%', overflow: 'auto', pointerEvents: 'auto' }}>
                                     <iframe src={blobURL} width="100%" height="100%" />
 
                                 </div>
@@ -1772,4 +1515,3 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         </div>
     );
 }
-
