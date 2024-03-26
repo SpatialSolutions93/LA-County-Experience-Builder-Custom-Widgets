@@ -1369,20 +1369,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     // After adding the intersected features to the map
                     mapViewRef.current.map.add(graphicsLayer);
 
-                    // Create a Legend widget and add it to the mapView
-                    const legend = new Legend({
-                        view: mapViewRef.current, // Assuming mapViewRef.current is your mapView instance
-                        layerInfos: [{
-                            layer: graphicsLayer,
-                            title: "Legend Title" // Customize your legend title
-                        }]
-                    });
-
-                    // Place the legend in the bottom right of the map
-                    mapViewRef.current.ui.add(legend, {
-                        position: "bottom-right"
-                    });
-
                     console.log("Intersected features added to the map and legend displayed.");
 
 
