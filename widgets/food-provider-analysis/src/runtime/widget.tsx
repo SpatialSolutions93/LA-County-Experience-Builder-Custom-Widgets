@@ -791,6 +791,16 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             height: 150,
                             width: 365,
                             absolutePosition: { x: 270, y: 928 }
+                        },
+                        // Adding text next to the USC logo
+                        {
+                            // Assuming you want the text to be vertically aligned with the USC logo,
+                            // adjust `y` to match and `x` to position to the right of the logo
+                            text: 'Legend',
+                            fontSize: 48, // Adjust font size as needed
+                            bold: true,
+                            absolutePosition: { x: 920, y: 878 }, // Adjust x to position right of the USC logo
+                            // If more styling is needed, use a stack or additional properties
                         }
                     ]
                 }
