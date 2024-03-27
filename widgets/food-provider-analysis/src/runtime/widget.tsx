@@ -184,13 +184,20 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             const income_loading = income_group_loading.layers.getItemAt(5) as FeatureLayer;
             const hispanic_group_loading = demographics.layers.getItemAt(7) as GroupLayer;
             const hispanic_loading = hispanic_group_loading.layers.getItemAt(5) as FeatureLayer;
-            const englishSecondLanguage_loading = demographics.layers.getItemAt(6) as FeatureLayer;
-            const immigrationStatus_loading = demographics.layers.getItemAt(5) as FeatureLayer;
-            const vehicleOwnershipRenters_loading = demographics.layers.getItemAt(3) as FeatureLayer;
-            const vehicleOwnershipLandowners_loading = demographics.layers.getItemAt(4) as FeatureLayer;
-            const householdSize_loading = demographics.layers.getItemAt(2) as FeatureLayer;
-            const disability_loading = demographics.layers.getItemAt(1) as FeatureLayer;
-            const healthInsurance_loading = demographics.layers.getItemAt(0) as FeatureLayer;
+            const englishSecondLanguage = demographics.layers.getItemAt(6) as GroupLayer;
+            const englishSecondLanguage_loading = englishSecondLanguage.layers.getItemAt(5) as FeatureLayer;
+            const immigrationStatus = demographics.layers.getItemAt(5) as GroupLayer;
+            const immigrationStatus_loading = immigrationStatus.layers.getItemAt(5) as FeatureLayer;
+            const vehicleOwnershipRenters = demographics.layers.getItemAt(3) as GroupLayer;
+            const vehicleOwnershipRenters_loading = vehicleOwnershipRenters.layers.getItemAt(5) as FeatureLayer;
+            const vehicleOwnershipLandowners = demographics.layers.getItemAt(4) as GroupLayer;
+            const vehicleOwnershipLandowners_loading = vehicleOwnershipLandowners.layers.getItemAt(5) as FeatureLayer;
+            const householdSize = demographics.layers.getItemAt(2) as GroupLayer;
+            const householdSize_loading = householdSize.layers.getItemAt(5) as FeatureLayer;
+            const disability = demographics.layers.getItemAt(1) as GroupLayer;
+            const disability_loading = disability.layers.getItemAt(5) as FeatureLayer;
+            const healthInsurance = demographics.layers.getItemAt(0) as GroupLayer;
+            const healthInsurance_loading = healthInsurance.layers.getItemAt(6) as FeatureLayer;
             const healthyPlacesIndex_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const socialVulnerabilityIndex_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(1) as FeatureLayer;
             const redlining_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(0) as FeatureLayer;
@@ -644,6 +651,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
         function generateSlideForDataset(datasetId, datasetName) {
 
+            // After all the filtering is done, globalLegendData should be populated
+            console.log("Global Legend Data after filtering:", globalLegendData);
+
             const coloredLine = {
                 canvas: [{
                     type: 'line',
@@ -773,6 +783,35 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 ],
                 margin: [0, 0, 0, 20]
             };
+
+            // Assuming globalLegendData is filled with the legend data as previously described
+            /*             const legendDataForDataset = globalLegendData[datasetId] || [];
+            
+                        // Generate legend items for PDF document
+                        const legendItemsForPDF = legendDataForDataset.map(item => {
+                            return {
+                                columns: [
+                                    {
+                                        // This creates a small square with the symbol's color
+                                        canvas: [{ type: 'rect', x: 0, y: 0, w: 10, h: 10, color: item.color }],
+                                        width: 12  // Adjust as necessary
+                                    },
+                                    {
+                                        // The symbol's label
+                                        text: item.label,
+                                        fontSize: 10,  // Adjust as necessary
+                                        margin: [5, 0, 0, 0]  // Adjust as necessary
+                                    }
+                                ]
+                            };
+                        }); 
+            
+                        console.log("Pre Legend Items");
+            
+                        console.log('Legend items for dataset:', legendItemsForPDF);*/
+
+            console.log("Dataset ID in Generate Slides: ", datasetId);
+
             // Define statistics inside the function to ensure it's unique for each slide
             const statistics = [
                 headerWithRectangles,
@@ -1279,6 +1318,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         maskLayer.graphics.add(maskGraphic);
     };
 
+    // Somewhere in a shared scope accessible by both functions
+    let globalLegendData = {};
+
     const filterPointsWithinPolygon = async (record, datasetId) => {
         console.log("Record:", record);
         // Ensure currentLayerView is defined before proceeding
@@ -1335,9 +1377,38 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                     for (let cb of featureLayerRenderer.classBreakInfos) {
                                         if (attributeValue >= cb.minValue && attributeValue < cb.maxValue) {
                                             symbol = cb.symbol.clone();
+                                            console.log("Symbol:", symbol);
                                             break;
                                         }
                                     }
+
+                                    globalLegendData[datasetId] = featureLayerRenderer.classBreakInfos.map(info => {
+                                        // Clone the symbol to access its properties
+                                        const symbol = info.symbol.clone();
+
+                                        // Find the CIMSolidFill layer to access the color array
+                                        const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
+                                        if (fillLayer && fillLayer.color) {
+                                            const [r, g, b, a] = fillLayer.color; // Extract RGBA values
+                                            // Convert the RGBA array into a CSS-friendly color string
+                                            const rgbaColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
+
+                                            return {
+                                                label: info.label,
+                                                color: rgbaColor,
+                                            };
+                                        } else {
+                                            // Fallback color if the expected structure is not found
+                                            return {
+                                                label: info.label,
+                                                color: 'rgba(0, 0, 0, 1)', // Default to black or any suitable default
+                                            };
+                                        }
+                                    });
+
+                                    // After assigning globalLegendData inside filterPointsWithinPolygon
+                                    console.log(`Legend data for dataset ${datasetId}:`, globalLegendData[datasetId]);
+
                                 } else if (featureLayerRenderer.type === "unique-value") {
                                     // For UniqueValueRenderer, find the correct symbol based on the feature's attribute value
                                     const attributeValue = feature.attributes[featureLayerRenderer.field]; // Assuming a single field for simplicity
@@ -1350,6 +1421,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                 }
                                 // Ensure a symbol was found or fallback to a default symbol
                                 symbol = symbol || defaultSymbol;
+
+                                // Log the entire globalLegendData object
+                                console.log("Entire global legend data after assignment:", globalLegendData);
+
 
                                 // Create the graphic with the symbol
                                 return new Graphic({
