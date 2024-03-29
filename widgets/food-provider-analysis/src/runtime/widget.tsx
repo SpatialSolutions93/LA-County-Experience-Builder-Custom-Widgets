@@ -90,6 +90,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [healthyPlacesIndex, setHealthyPlacesIndex] = useState<FeatureLayer | null>(null);
     const [socialVulnerabilityIndex, setSocialVulnerabilityIndex] = useState<FeatureLayer | null>(null);
     const [redlining, setRedlining] = useState<FeatureLayer | null>(null);
+    const [globalLegendData, setGlobalLegendData] = React.useState({});
+
 
     const pointsInsideFeatureCountRef = React.useRef(null);
 
@@ -569,468 +571,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const featureName = selectedRecord?.attributes?.[attributeKey] || "Unknown Name";
 
-    const generateTestPDF = async (imageDimensions) => {
-
-        // Create a canvas for the basemap and polygon
-        const canvas = document.createElement('canvas');
-        const canvasWidth = 1920;
-        const canvasHeight = 1080;
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        const mapWidth = imageDimensions.width;
-        const mapHeight = imageDimensions.height;
-
-        // Calculate the image's height based on the original width-to-height ratio, considering new width.
-        const mapAspectRatio = mapHeight / mapWidth;
-        /*         let 864 = (canvasWidth / 2) * .9;
-                let imageHeight = 864 * mapAspectRatio; */
-
-        console.log('Image dimensions:', 864, 647.3653281096964);
-
-        /*         // Ensure the image fits within the canvas height
-                if (imageHeight > canvasHeight) {
-                    const scalingFactor = canvasHeight / imageHeight;
-                    864 *= scalingFactor;
-                    imageHeight *= scalingFactor;
-                } */
-
-        const selectedFeatureName = featureName;
-        const averagePerSquareMile = "#";
-
-        let statistics;
-
-        let title_page;
-
-        const bullet = '\u2022'; // Unicode bullet point
-
-        title_page = [
-            {
-                stack: [
-                    {
-                        columns: [
-                            {}, // Empty column for padding on the left side
-                            {
-                                text: `Food Availability in ${selectedFeatureName}`,
-                                style: 'title_main',
-                                width: canvasWidth * 0.75, // 75% of the canvas width
-                                alignment: 'center'
-                            },
-                            {} // Empty column for padding on the right side
-                        ],
-                        // Add these if you want to balance out the space distributed to each column
-                        columnGap: 0,
-                        widths: ['12.5%', '75%', '12.5%']
-                    },
-                    {
-                        text: `Generated on ${new Date().toLocaleDateString()}`, // This will display the current date
-                        style: 'date_style',
-                        margin: [0, 50]
-                    }
-                ],
-                margin: [0, -150]
-            },
-            {
-                columns: [
-                    {
-                        image: Logos.LACounty_logo,
-                        height: 400,
-                        width: 400,
-                        absolutePosition: { x: 368, y: 610 }
-                    },
-                    {
-                        image: Logos.USC_logo,
-                        height: 240,
-                        width: 584,
-                        absolutePosition: { x: 1056, y: 708 }
-                    }
-                ]
-            }
-        ];
-
-        const overlap = 10;  // Set the thickness of your outline
-
-        function generateSlideForDataset(datasetId, datasetName) {
-
-            // After all the filtering is done, globalLegendData should be populated
-            console.log("Global Legend Data after filtering:", globalLegendData);
-
-            const coloredLine = {
-                canvas: [{
-                    type: 'line',
-                    x1: -10,
-                    y1: 210,
-                    x2: 720,
-                    y2: 210,
-                    lineWidth: 4,
-                    lineColor: '#4472C4'
-                }],
-                margin: [0, 0, 0, 220]
-            };
-
-
-            console.log('Generating slide for dataset:', selectedFeatureName);
-            console.log('Dataset name:', datasetName);
-
-            let textGroup;
-
-            if (selectedFeatureName === "Alhambra") {
-
-                if (datasetName === "CalFresh Food Retailers") {
-
-                    textGroup = {
-                        stack: [
-                            { text: `${bullet} 42 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
-                            { text: `${bullet} 1 ${datasetName} for every 1,934 people`, style: 'bodyText' },
-                            { text: `${bullet} 5.5 ${datasetName} every square mile`, style: 'bodyText' }
-                        ],
-                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-                    };
-
-                } else if (datasetName === "Retail Food Markets") {
-
-                    textGroup = {
-                        stack: [
-                            { text: `${bullet} 82 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
-                            { text: `${bullet} 1 ${datasetName} for every 990 people`, style: 'bodyText' },
-                            { text: `${bullet} 10.75 ${datasetName} every square mile`, style: 'bodyText' }
-                        ],
-                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-                    };
-
-                } else if (datasetName === "WIC Food Retailers") {
-
-                    textGroup = {
-                        stack: [
-                            { text: `${bullet} 4 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
-                            { text: `${bullet} 1 ${datasetName} for every 20,303 people`, style: 'bodyText' },
-                            { text: `${bullet} .52 ${datasetName} every square mile`, style: 'bodyText' }
-                        ],
-                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-                    };
-
-                }
-
-            } else if (selectedFeatureName === "San Marino") {
-
-                if (datasetName === "CalFresh Food Retailers") {
-
-                    textGroup = {
-                        stack: [
-                            { text: `${bullet} 0 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' }
-                        ],
-                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-                    };
-
-                } else if (datasetName === "Retail Food Markets") {
-
-                    textGroup = {
-                        stack: [
-                            { text: `${bullet} 1 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
-                            { text: `${bullet} 1 ${datasetName} for every 12,254 people`, style: 'bodyText' },
-                            { text: `${bullet} .27 ${datasetName} every square mile`, style: 'bodyText' }
-                        ],
-                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-                    };
-
-                } else if (datasetName === "WIC Food Retailers") {
-
-                    textGroup = {
-                        stack: [
-                            { text: `${bullet} 0 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' }
-                        ],
-                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-                    };
-
-                }
-
-            } else {
-
-                textGroup = {
-                    stack: [
-                        { text: `${bullet} ${pointsInsideFeatureCountRef.current} ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
-                        { text: `${bullet} 1 ${datasetName} for every [#] people`, style: 'bodyText' },
-                        { text: `${bullet} ${averagePerSquareMile} ${datasetName} every square mile`, style: 'bodyText' }
-                    ],
-                    margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
-                };
-
-            }
-
-            const headerWithRectangles = {
-                stack: [
-                    {
-                        canvas: [
-                            {
-                                type: 'rect',
-                                x: -82,
-                                y: 225,  // Starting position
-                                w: 30,
-                                h: 120,
-                                color: '#FFCC00'
-                            },
-                            {
-                                type: 'rect',
-                                x: -104,
-                                y: 225,  // Adjust based on the desired space between the rectangles
-                                w: 10,
-                                h: 120,
-                                color: '#FFCC00'
-                            }
-                        ]
-                    },
-                    { text: datasetName, style: 'header', margin: [65, -100, 0, -200], alignment: 'left' } // Adjust the margin as per your requirements for fine-tuning
-
-                ],
-                margin: [0, 0, 0, 20]
-            };
-
-            // Assuming globalLegendData is filled with the legend data as previously described
-            /*             const legendDataForDataset = globalLegendData[datasetId] || [];
-            
-                        // Generate legend items for PDF document
-                        const legendItemsForPDF = legendDataForDataset.map(item => {
-                            return {
-                                columns: [
-                                    {
-                                        // This creates a small square with the symbol's color
-                                        canvas: [{ type: 'rect', x: 0, y: 0, w: 10, h: 10, color: item.color }],
-                                        width: 12  // Adjust as necessary
-                                    },
-                                    {
-                                        // The symbol's label
-                                        text: item.label,
-                                        fontSize: 10,  // Adjust as necessary
-                                        margin: [5, 0, 0, 0]  // Adjust as necessary
-                                    }
-                                ]
-                            };
-                        }); 
-            
-                        console.log("Pre Legend Items");
-            
-                        console.log('Legend items for dataset:', legendItemsForPDF);*/
-
-            console.log("Dataset ID in Generate Slides: ", datasetId);
-
-            // Define statistics inside the function to ensure it's unique for each slide
-            const statistics = [
-                headerWithRectangles,
-                coloredLine,
-                textGroup,
-                {
-                    columns: [
-                        {
-                            image: Logos.LACounty_logo,
-                            height: 250,
-                            width: 250,
-                            absolutePosition: { x: 20, y: 810 }
-                        },
-                        {
-                            image: Logos.USC_logo,
-                            height: 150,
-                            width: 365,
-                            absolutePosition: { x: 270, y: 928 }
-                        },
-                        // Adding text next to the USC logo
-                        {
-                            // Assuming you want the text to be vertically aligned with the USC logo,
-                            // adjust `y` to match and `x` to position to the right of the logo
-                            text: 'Legend',
-                            fontSize: 48, // Adjust font size as needed
-                            bold: true,
-                            absolutePosition: { x: 920, y: 878 }, // Adjust x to position right of the USC logo
-                            // If more styling is needed, use a stack or additional properties
-                        }
-                    ]
-                }
-            ];
-
-            return {
-                table: {
-                    widths: ['50%', '60%'],
-                    heights: [canvasHeight],
-                    body: [
-                        [
-                            {
-                                stack: statistics,
-                                margin: [65, 0] // 220
-                            },
-                            ''
-                        ]
-                    ]
-                },
-                layout: 'noBorders'
-            };
-        }
-
-
-        let dynamicSlides = [];
-
-        for (let datasetId of selectedDatasets) {
-            const datasetName = getDatasetName(datasetId);
-            dynamicSlides.push(generateSlideForDataset(datasetId, datasetName));
-        }
-
-
-        const docDefinition = {
-            // Background definition for the red rectangle and black outline
-            background: function (currentPage, pageSize) {
-                if (currentPage === 1) {
-                    // Return the rectangles for the first slide's background
-                    return {
-                        canvas: [
-                            // Outer rectangle with color #990000
-                            {
-                                type: 'rect',
-                                x: (canvasWidth - (canvasWidth - 80)) / 2,
-                                y: (canvasHeight - (canvasHeight - 80)) / 2,
-                                w: canvasWidth - 80,
-                                h: canvasHeight - 80,
-                                lineWidth: 5,
-                                lineColor: '#990000'
-                            },
-                            // Inner rectangle with color #FFCC00
-                            {
-                                type: 'rect',
-                                x: (canvasWidth - (canvasWidth - 90)) / 2,
-                                y: (canvasHeight - (canvasHeight - 90)) / 2,
-                                w: canvasWidth - 90,
-                                h: canvasHeight - 90,
-                                lineWidth: 5,
-                                lineColor: '#FFCC00'
-                            }
-                        ]
-                    };
-                } else if (currentPage > 1) {
-                    return {
-                        canvas: [
-                            // Red rectangle
-                            {
-                                type: 'rect',
-                                x: pageSize.width - 200,
-                                y: 0,
-                                w: 200,
-                                h: pageSize.height,
-                                color: '#990000'
-                            },
-                            // White border around the map
-                            {
-                                type: 'rect',
-                                x: pageSize.width - 864 - 2 * overlap - 160,
-                                y: ((canvasHeight - 647.3653281096964) / 2) - overlap - 40,
-                                w: 864 - 2 + 100,
-                                h: 647.3653281096964 - 2 + 100,
-                                color: 'white',
-                                lineWidth: overlap - 8,
-                                lineColor: 'white'
-                            },
-                            // Black border around the map
-                            {
-                                type: 'rect',
-                                x: pageSize.width - 864 - 2 * overlap - 110,
-                                y: ((canvasHeight - 647.3653281096964) / 2) - overlap + 10,
-                                w: 864 - 1,
-                                h: 647.3653281096964,
-                                lineWidth: overlap,
-                                lineColor: 'black'
-                            }
-                        ]
-                    };
-                }
-                return null;
-            },
-
-            content: [
-                // Content for the first slide
-                {
-                    stack: [
-                        {
-                            table: {
-                                widths: ['100%'],
-                                heights: [canvasHeight],
-                                body: [
-                                    [
-                                        {
-                                            stack: title_page,
-                                            margin: [65, 320]
-                                        }
-                                    ]
-                                ]
-                            },
-                            layout: 'noBorders'
-                        }
-                    ],
-                },
-
-                // Add the dynamic slides
-                ...dynamicSlides.map((slide, index) => {
-                    return {
-                        stack: [
-                            slide,
-                            {
-                                image: mapScreenshotDataArray[index],
-                                width: 864,
-                                height: 647.3653281096964,
-                                absolutePosition: { x: 926, y: 216 } // 214
-                            }
-                        ]
-                    }
-                })
-
-            ]
-            ,
-
-            pageSize: { width: canvasWidth, height: canvasHeight },
-            pageOrientation: 'landscape',
-            styles: {
-                header: {
-                    fontSize: 76,
-                    color: 'black',
-                    bold: true
-                },
-                bodyText: {
-                    fontSize: 43,
-                    color: 'black'
-                },
-                title_main: {
-                    fontSize: 116,
-                    color: 'black',
-                    bold: true,
-                    alignment: 'center'
-                },
-                date_style: {
-                    fontSize: 43,
-                    color: 'black',
-                    alignment: 'center'
-                }
-            }
-        };
-
-        if (!selectedRecord || !selectedRecord || !selectedRecord.geometry) {
-            console.error("Invalid record or geometry. Cannot generate PDF.");
-            return;
-        }
-
-        pdfMake.createPdf(docDefinition).getBlob((blob) => {
-            setPdfBlob(blob);
-            setShowPDFPane(true);
-        });
-    };
-
-    React.useEffect(() => {
-        if (imageDimensions) {
-            generateTestPDF(imageDimensions).then(() => {
-                progressCtrRef.current += 1;
-                if (progressCtrRef.current === slideCtrRef.current) {
-                    setPdfGenerationComplete(true);
-                    setIsLoadingReport(false);
-
-                    handleCloseReport();
-                }
-            });
-        }
-    }, [imageDimensions]);
-
     // 1. Setup the map and layers for the selected feature
     const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
 
@@ -1318,9 +858,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         maskLayer.graphics.add(maskGraphic);
     };
 
-    // Somewhere in a shared scope accessible by both functions
-    let globalLegendData = {};
-
     const filterPointsWithinPolygon = async (record, datasetId) => {
         console.log("Record:", record);
         // Ensure currentLayerView is defined before proceeding
@@ -1377,37 +914,38 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                     for (let cb of featureLayerRenderer.classBreakInfos) {
                                         if (attributeValue >= cb.minValue && attributeValue < cb.maxValue) {
                                             symbol = cb.symbol.clone();
-                                            console.log("Symbol:", symbol);
                                             break;
                                         }
                                     }
 
-                                    globalLegendData[datasetId] = featureLayerRenderer.classBreakInfos.map(info => {
-                                        // Clone the symbol to access its properties
-                                        const symbol = info.symbol.clone();
+                                    setGlobalLegendData(prevData => {
+                                        const newData = { ...prevData }; // Clone the previous state to ensure immutability
+                                        const legendDataForCurrentDataset = featureLayerRenderer.classBreakInfos.map(info => {
+                                            const symbol = info.symbol.clone();
 
-                                        // Find the CIMSolidFill layer to access the color array
-                                        const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
-                                        if (fillLayer && fillLayer.color) {
-                                            const [r, g, b, a] = fillLayer.color; // Extract RGBA values
-                                            // Convert the RGBA array into a CSS-friendly color string
-                                            const rgbaColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
+                                            // Find the CIMSolidFill layer to access the color array
+                                            const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
+                                            if (fillLayer && fillLayer.color) {
+                                                const [r, g, b, a] = fillLayer.color; // Extract RGBA values
+                                                // Convert the RGBA array into a CSS-friendly color string
+                                                const rgbaColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
+                                                return {
+                                                    label: info.label,
+                                                    color: rgbaColor,
+                                                };
+                                            } else {
+                                                // Fallback color if the expected structure is not found
+                                                return {
+                                                    label: info.label,
+                                                    color: 'rgba(0, 0, 0, 1)', // Default to black or any suitable default
+                                                };
+                                            }
+                                        });
 
-                                            return {
-                                                label: info.label,
-                                                color: rgbaColor,
-                                            };
-                                        } else {
-                                            // Fallback color if the expected structure is not found
-                                            return {
-                                                label: info.label,
-                                                color: 'rgba(0, 0, 0, 1)', // Default to black or any suitable default
-                                            };
-                                        }
+                                        newData[datasetId] = legendDataForCurrentDataset;
+                                        return newData; // Return the new state
                                     });
 
-                                    // After assigning globalLegendData inside filterPointsWithinPolygon
-                                    console.log(`Legend data for dataset ${datasetId}:`, globalLegendData[datasetId]);
 
                                 } else if (featureLayerRenderer.type === "unique-value") {
                                     // For UniqueValueRenderer, find the correct symbol based on the feature's attribute value
@@ -1421,10 +959,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                 }
                                 // Ensure a symbol was found or fallback to a default symbol
                                 symbol = symbol || defaultSymbol;
-
-                                // Log the entire globalLegendData object
-                                console.log("Entire global legend data after assignment:", globalLegendData);
-
 
                                 // Create the graphic with the symbol
                                 return new Graphic({
@@ -1451,6 +985,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
                     mapViewRef.current.map.layers.remove(featureLayer);
                     console.log("Original feature layer has been removed from the map.");
+
                 } else {
                     console.log("No features returned from query.");
                 }
@@ -1471,7 +1006,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const getPointsInsideFeature = async (datasetId) => {
         const currentLayerView = layerViews[datasetId];
-        console.log("Dataset ID:", datasetId);
         if (!currentLayerView) {
             console.error(`No layer view found for dataset ID: ${datasetId}`);
             return Promise.reject(`No layer view found for dataset ID: ${datasetId}`);
@@ -1504,6 +1038,492 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
         return null;
     }
+
+
+    const generateTestPDF = async (globalLegendData) => {
+
+        // Create a canvas for the basemap and polygon
+        const canvas = document.createElement('canvas');
+        const canvasWidth = 1920;
+        const canvasHeight = 1080;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        console.log('Image dimensions:', 864, 647.3653281096964);
+
+        const selectedFeatureName = featureName;
+        const averagePerSquareMile = "#";
+
+        let statistics;
+
+        let title_page;
+
+        const bullet = '\u2022'; // Unicode bullet point
+
+        title_page = [
+            {
+                stack: [
+                    {
+                        columns: [
+                            {}, // Empty column for padding on the left side
+                            {
+                                text: `Food Availability in ${selectedFeatureName}`,
+                                style: 'title_main',
+                                width: canvasWidth * 0.75, // 75% of the canvas width
+                                alignment: 'center'
+                            },
+                            {} // Empty column for padding on the right side
+                        ],
+                        // Add these if you want to balance out the space distributed to each column
+                        columnGap: 0,
+                        widths: ['12.5%', '75%', '12.5%']
+                    },
+                    {
+                        text: `Generated on ${new Date().toLocaleDateString()}`, // This will display the current date
+                        style: 'date_style',
+                        margin: [0, 50]
+                    }
+                ],
+                margin: [0, -150]
+            },
+            {
+                columns: [
+                    {
+                        image: Logos.LACounty_logo,
+                        height: 400,
+                        width: 400,
+                        absolutePosition: { x: 368, y: 610 }
+                    },
+                    {
+                        image: Logos.USC_logo,
+                        height: 240,
+                        width: 584,
+                        absolutePosition: { x: 1056, y: 708 }
+                    }
+                ]
+            }
+        ];
+
+        const overlap = 10;  // Set the thickness of your outline
+
+        function generateSlideForDataset(datasetId, datasetName) {
+
+            const coloredLine = {
+                canvas: [{
+                    type: 'line',
+                    x1: -10,
+                    y1: 210,
+                    x2: 720,
+                    y2: 210,
+                    lineWidth: 4,
+                    lineColor: '#4472C4'
+                }],
+                margin: [0, 0, 0, 220]
+            };
+
+            console.log("Dataset ID:", datasetId);
+
+
+            console.log('Generating slide for dataset:', selectedFeatureName);
+            console.log('Dataset name:', datasetName);
+
+            let textGroup;
+
+            if (selectedFeatureName === "Alhambra") {
+
+                if (datasetName === "CalFresh Food Retailers") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 42 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                            { text: `${bullet} 1 ${datasetName} for every 1,934 people`, style: 'bodyText' },
+                            { text: `${bullet} 5.5 ${datasetName} every square mile`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                } else if (datasetName === "Retail Food Markets") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 82 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                            { text: `${bullet} 1 ${datasetName} for every 990 people`, style: 'bodyText' },
+                            { text: `${bullet} 10.75 ${datasetName} every square mile`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                } else if (datasetName === "WIC Food Retailers") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 4 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                            { text: `${bullet} 1 ${datasetName} for every 20,303 people`, style: 'bodyText' },
+                            { text: `${bullet} .52 ${datasetName} every square mile`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                }
+
+            } else if (selectedFeatureName === "San Marino") {
+
+                if (datasetName === "CalFresh Food Retailers") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 0 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                } else if (datasetName === "Retail Food Markets") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 1 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                            { text: `${bullet} 1 ${datasetName} for every 12,254 people`, style: 'bodyText' },
+                            { text: `${bullet} .27 ${datasetName} every square mile`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                } else if (datasetName === "WIC Food Retailers") {
+
+                    textGroup = {
+                        stack: [
+                            { text: `${bullet} 0 ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' }
+                        ],
+                        margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                    };
+
+                }
+
+            } else {
+
+                textGroup = {
+                    stack: [
+                        { text: `${bullet} ${pointsInsideFeatureCountRef.current} ${datasetName} in ${selectedFeatureName}`, style: 'bodyText' },
+                        { text: `${bullet} 1 ${datasetName} for every [#] people`, style: 'bodyText' },
+                        { text: `${bullet} ${averagePerSquareMile} ${datasetName} every square mile`, style: 'bodyText' }
+                    ],
+                    margin: [0, -183, 0, 0]  // Adjust this margin to move the entire group up by 200 units
+                };
+
+            }
+
+            const headerWithRectangles = {
+                stack: [
+                    {
+                        canvas: [
+                            {
+                                type: 'rect',
+                                x: -82,
+                                y: 225,  // Starting position
+                                w: 30,
+                                h: 120,
+                                color: '#FFCC00'
+                            },
+                            {
+                                type: 'rect',
+                                x: -104,
+                                y: 225,  // Adjust based on the desired space between the rectangles
+                                w: 10,
+                                h: 120,
+                                color: '#FFCC00'
+                            }
+                        ]
+                    },
+                    { text: datasetName, style: 'header', margin: [65, -100, 0, -200], alignment: 'left' } // Adjust the margin as per your requirements for fine-tuning
+
+                ],
+                margin: [0, 0, 0, 20]
+            };
+
+            function rgbaToHex(r, g, b, a) {
+                // Convert each number to a hexadecimal string and pad with zero if single digit
+                const toHex = c => ('0' + parseInt(c).toString(16)).slice(-2);
+                console.log("R g b a", r, g, b, a, "Hex", `#${toHex(r)}${toHex(g)}${toHex(b)}${toHex(Math.round(a * 255))}`);
+                return `#${toHex(r)}${toHex(g)}${toHex(b)}${toHex(Math.round(a * 255))}`;
+            }
+
+            const legendDataForDataset = globalLegendData[datasetId] || [];
+
+            // Convert the RGBA colors to hex colors for the PDF generation
+            const legendItemsForPDF = legendDataForDataset.map(item => {
+                // Extract RGBA values from the color string
+                const rgba = item.color.match(/\d+/g).map(Number); // Convert matches to numbers
+                // Assuming the array has 4 elements, corresponding to R, G, B, and A
+                const [r, g, b, a] = rgba;
+                // Convert to hex color string
+                const hexColor = rgbaToHex(r, g, b, a / 255); // Divide alpha by 255 to get a fraction
+
+                return {
+                    columns: [
+                        {
+                            // Create a square using the converted hex color
+                            canvas: [{
+                                type: 'rect',
+                                x: 0, y: 0,
+                                w: 20,
+                                h: 20,
+                                color: hexColor,
+                                lineColor: 'black',
+                                lineWidth: 1
+                            }],
+                            width: 20,
+                            margin: [0, 5, 10, 5]
+                        },
+                        {
+                            text: item.label,
+                            fontSize: 10,
+                            margin: [5, 5, 0, 0]
+                        }
+                    ]
+                };
+            });
+
+
+
+
+
+            console.log("Pre Legend Items");
+
+            console.log('Legend items for dataset:', legendItemsForPDF);
+
+            // Define statistics inside the function to ensure it's unique for each slide
+            const statistics = [
+                headerWithRectangles,
+                coloredLine,
+                textGroup,
+                {
+                    columns: [
+                        {
+                            image: Logos.LACounty_logo,
+                            height: 250,
+                            width: 250,
+                            absolutePosition: { x: 20, y: 810 }
+                        },
+                        {
+                            image: Logos.USC_logo,
+                            height: 150,
+                            width: 365,
+                            absolutePosition: { x: 270, y: 928 }
+                        },
+                        // Adding text next to the USC logo
+                        {
+                            // Assuming you want the text to be vertically aligned with the USC logo,
+                            // adjust `y` to match and `x` to position to the right of the logo
+                            text: 'Legend',
+                            fontSize: 48, // Adjust font size as needed
+                            bold: true,
+                            absolutePosition: { x: 920, y: 878 }, // Adjust x to position right of the USC logo
+                            // If more styling is needed, use a stack or additional properties
+                        },
+                        {
+                            stack: [
+                                {
+                                    // The "Legend" title setup
+                                    text: 'Legend',
+                                    fontSize: 48, // Adjust font size as needed
+                                    bold: true,
+                                    absolutePosition: { x: 920, y: 878 }, // Adjust x to position right of the USC logo
+                                },
+                                ...legendItemsForPDF // Insert the dynamically generated legend items here
+                            ],
+                            // Adjust the positioning of the entire stack as necessary
+                            absolutePosition: { x: 920, y: 930 }
+                        }
+                    ]
+                }
+            ];
+
+            return {
+                table: {
+                    widths: ['50%', '60%'],
+                    heights: [canvasHeight],
+                    body: [
+                        [
+                            {
+                                stack: statistics,
+                                margin: [65, 0] // 220
+                            },
+                            ''
+                        ]
+                    ]
+                },
+                layout: 'noBorders'
+            };
+        }
+
+
+        let dynamicSlides = [];
+
+        for (let datasetId of selectedDatasets) {
+            const datasetName = getDatasetName(datasetId);
+            dynamicSlides.push(generateSlideForDataset(datasetId, datasetName));
+        }
+
+
+        const docDefinition = {
+            // Background definition for the red rectangle and black outline
+            background: function (currentPage, pageSize) {
+                if (currentPage === 1) {
+                    // Return the rectangles for the first slide's background
+                    return {
+                        canvas: [
+                            // Outer rectangle with color #990000
+                            {
+                                type: 'rect',
+                                x: (canvasWidth - (canvasWidth - 80)) / 2,
+                                y: (canvasHeight - (canvasHeight - 80)) / 2,
+                                w: canvasWidth - 80,
+                                h: canvasHeight - 80,
+                                lineWidth: 5,
+                                lineColor: '#990000'
+                            },
+                            // Inner rectangle with color #FFCC00
+                            {
+                                type: 'rect',
+                                x: (canvasWidth - (canvasWidth - 90)) / 2,
+                                y: (canvasHeight - (canvasHeight - 90)) / 2,
+                                w: canvasWidth - 90,
+                                h: canvasHeight - 90,
+                                lineWidth: 5,
+                                lineColor: '#FFCC00'
+                            }
+                        ]
+                    };
+                } else if (currentPage > 1) {
+                    return {
+                        canvas: [
+                            // Red rectangle
+                            {
+                                type: 'rect',
+                                x: pageSize.width - 200,
+                                y: 0,
+                                w: 200,
+                                h: pageSize.height,
+                                color: '#990000'
+                            },
+                            // White border around the map
+                            {
+                                type: 'rect',
+                                x: pageSize.width - 864 - 2 * overlap - 160,
+                                y: ((canvasHeight - 647.3653281096964) / 2) - overlap - 40,
+                                w: 864 - 2 + 100,
+                                h: 647.3653281096964 - 2 + 100,
+                                color: 'white',
+                                lineWidth: overlap - 8,
+                                lineColor: 'white'
+                            },
+                            // Black border around the map
+                            {
+                                type: 'rect',
+                                x: pageSize.width - 864 - 2 * overlap - 110,
+                                y: ((canvasHeight - 647.3653281096964) / 2) - overlap + 10,
+                                w: 864 - 1,
+                                h: 647.3653281096964,
+                                lineWidth: overlap,
+                                lineColor: 'black'
+                            }
+                        ]
+                    };
+                }
+                return null;
+            },
+
+            content: [
+                // Content for the first slide
+                {
+                    stack: [
+                        {
+                            table: {
+                                widths: ['100%'],
+                                heights: [canvasHeight],
+                                body: [
+                                    [
+                                        {
+                                            stack: title_page,
+                                            margin: [65, 320]
+                                        }
+                                    ]
+                                ]
+                            },
+                            layout: 'noBorders'
+                        }
+                    ],
+                },
+
+                // Add the dynamic slides
+                ...dynamicSlides.map((slide, index) => {
+                    return {
+                        stack: [
+                            slide,
+                            {
+                                image: mapScreenshotDataArray[index],
+                                width: 864,
+                                height: 647.3653281096964,
+                                absolutePosition: { x: 926, y: 216 } // 214
+                            }
+                        ]
+                    }
+                })
+
+            ]
+            ,
+
+            pageSize: { width: canvasWidth, height: canvasHeight },
+            pageOrientation: 'landscape',
+            styles: {
+                header: {
+                    fontSize: 76,
+                    color: 'black',
+                    bold: true
+                },
+                bodyText: {
+                    fontSize: 43,
+                    color: 'black'
+                },
+                title_main: {
+                    fontSize: 116,
+                    color: 'black',
+                    bold: true,
+                    alignment: 'center'
+                },
+                date_style: {
+                    fontSize: 43,
+                    color: 'black',
+                    alignment: 'center'
+                }
+            }
+        };
+
+        if (!selectedRecord || !selectedRecord || !selectedRecord.geometry) {
+            console.error("Invalid record or geometry. Cannot generate PDF.");
+            return;
+        }
+
+        pdfMake.createPdf(docDefinition).getBlob((blob) => {
+            setPdfBlob(blob);
+            setShowPDFPane(true);
+        });
+    };
+
+
+    React.useEffect(() => {
+        if (imageDimensions) {
+            generateTestPDF(globalLegendData).then(() => {
+                progressCtrRef.current += 1;
+                if (progressCtrRef.current === slideCtrRef.current) {
+                    setPdfGenerationComplete(true);
+                    setIsLoadingReport(false);
+
+                    handleCloseReport();
+                }
+            });
+        }
+    }, [imageDimensions]);
 
     /**
      * Handle the click event to generate the PDF report.
