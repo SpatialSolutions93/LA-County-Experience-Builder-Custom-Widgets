@@ -1240,56 +1240,117 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 margin: [0, 0, 0, 20]
             };
 
-            function rgbaToHex(r, g, b, a) {
+            function rgbaToHex(r, g, b) {
                 // Convert each number to a hexadecimal string and pad with zero if single digit
                 const toHex = c => ('0' + parseInt(c).toString(16)).slice(-2);
-                console.log("R g b a", r, g, b, a, "Hex", `#${toHex(r)}${toHex(g)}${toHex(b)}${toHex(Math.round(a * 255))}`);
-                return `#${toHex(r)}${toHex(g)}${toHex(b)}${toHex(Math.round(a * 255))}`;
+                return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
             }
 
             const legendDataForDataset = globalLegendData[datasetId] || [];
 
-            // Convert the RGBA colors to hex colors for the PDF generation
-            const legendItemsForPDF = legendDataForDataset.map(item => {
-                // Extract RGBA values from the color string
-                const rgba = item.color.match(/\d+/g).map(Number); // Convert matches to numbers
-                // Assuming the array has 4 elements, corresponding to R, G, B, and A
-                const [r, g, b, a] = rgba;
-                // Convert to hex color string
-                const hexColor = rgbaToHex(r, g, b, a / 255); // Divide alpha by 255 to get a fraction
+            // Create individual legend items
+            const legendItems = legendDataForDataset.map(item => {
+                const rgba = item.color.match(/\d+/g).map(Number);
+                const [r, g, b] = rgba;
+                const hexColor = rgbaToHex(r, g, b);
 
                 return {
+                    // Horizontal layout for each legend item
                     columns: [
                         {
-                            // Create a square using the converted hex color
+                            // Color patch
                             canvas: [{
                                 type: 'rect',
                                 x: 0, y: 0,
-                                w: 20,
-                                h: 20,
-                                color: hexColor,
-                                lineColor: 'black',
-                                lineWidth: 1
+                                w: 40 * 2, // Width of the color patch
+                                h: 20 * 2, // Height of the color patch
+                                color: hexColor
                             }],
-                            width: 20,
-                            margin: [0, 5, 10, 5]
+                            width: 80,
+                            height: 40,
+                            margin: [0, 5, 10, 5] // Top and bottom margin for vertical space between patches
                         },
                         {
+                            // Label to the right of the color patch
                             text: item.label,
-                            fontSize: 10,
-                            margin: [5, 5, 0, 0]
+                            fontSize: 14 * 1.5, // Increased font size for the label
+                            alignment: 'left',
+                            margin: [0, 11, 0, 0] // Center the label vertically next to the patch
                         }
-                    ]
+                    ],
+                    columnGap: 10 // Space between the color patch and label
                 };
             });
 
+            let legendLabel
+
+            if (legendItems.length > 0) {
+
+                // Manually add the "No data" legend item
+                const noDataLegendItem = {
+                    columns: [
+                        {
+                            // Gray color patch for "No data"
+                            canvas: [{
+                                type: 'rect',
+                                x: 0, y: 0,
+                                w: 80, // Match the width of other patches
+                                h: 40, // Match the height of other patches
+                                color: '#a1a1a1' // Gray color
+                            }],
+                            width: 80,
+                            height: 40,
+                            margin: [0, 5, 10, 5] // Top and bottom margin for vertical space between patches
+                        },
+                        {
+                            // Label for "No data"
+                            text: 'No data',
+                            fontSize: 21, // Match the font size of other labels
+                            alignment: 'left',
+                            margin: [0, 11, 0, 0] // Vertically center the label with the patch
+                        }
+                    ],
+                    columnGap: 10 // Space between the patch and label
+                };
+
+                // Add the "No data" legend item to the end of the legendItems array
+                legendItems.push(noDataLegendItem);
 
 
+                legendLabel = {
+                    text: 'Legend',
+                    fontSize: 48,
+                    bold: true,
+                    margin: [0, 20, 0, 10] // Margin below the 'Legend' title
+                };
 
+            }
 
-            console.log("Pre Legend Items");
+            // Group the legend items into columns, each with two items
+            const legendColumns = [];
+            for (let i = 0; i < legendItems.length; i += 2) {
+                // Prepare a column with two items
+                const column = {
+                    stack: legendItems.slice(i, i + 2), // Get two items for the column
+                    margin: [0, 0, 0, 5] // Margin between items in the column
+                };
+                legendColumns.push(column);
+            }
 
-            console.log('Legend items for dataset:', legendItemsForPDF);
+            // Now create a row with all the columns aligned horizontally
+            const legendRow = {
+                columns: legendColumns.map(column => ({
+                    ...column,
+                    width: 'auto' // Each column only takes up the space it needs
+                })),
+                columnGap: 30 // No horizontal space between columns
+            };
+
+            // Adjust the layout for each column within legendRow to ensure proper width
+            legendColumns.forEach(column => {
+                column.width = 'auto'; // Set the width of the column to be automatic
+            });
+
 
             // Define statistics inside the function to ensure it's unique for each slide
             const statistics = [
@@ -1329,10 +1390,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                                     bold: true,
                                     absolutePosition: { x: 920, y: 878 }, // Adjust x to position right of the USC logo
                                 },
-                                ...legendItemsForPDF // Insert the dynamically generated legend items here
+                                legendRow // Insert the dynamically generated legend items here
                             ],
                             // Adjust the positioning of the entire stack as necessary
-                            absolutePosition: { x: 920, y: 930 }
+                            absolutePosition: { x: 920, y: 945 }
                         }
                     ]
                 }
