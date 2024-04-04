@@ -8,17 +8,17 @@ import Extent from "@arcgis/core/geometry/Extent.js";
 import Graphic from '@arcgis/core/Graphic';
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
-import Polygon from "@arcgis/core/geometry/Polygon";
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import './widgetStyles.css';
 import "react-pdf/dist/esm/Page/TextLayer.css";
-import { CSSProperties } from 'react';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Geometry from "@arcgis/core/geometry/Geometry.js";
-import Legend from "@arcgis/core/widgets/Legend.js";
-import html2canvas from 'html2canvas';
 import * as Logos from './logos';
+import { generateLegendItems } from './utils/legendUtils';
+import { mapStyle, reportButtonStyle, reportFormStyle, dropdownStyle } from './utils/customStyles';
+import { useDatasetChangeHandler } from './utils/formLogic'
+import { createMask, filterPointsWithinPolygon, getPointsInsideFeature } from './utils/geospatialProcessing';
 
 const { useRef, useState, useEffect } = React;
 
@@ -91,55 +91,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [socialVulnerabilityIndex, setSocialVulnerabilityIndex] = useState<FeatureLayer | null>(null);
     const [redlining, setRedlining] = useState<FeatureLayer | null>(null);
     const [globalLegendData, setGlobalLegendData] = React.useState({});
-
-
     const pointsInsideFeatureCountRef = React.useRef(null);
-
-    const mapStyle: CSSProperties = {
-        position: 'absolute',
-        top: '25%',
-        left: '25%',
-        width: '669.12px',
-        height: '500px',
-        backgroundColor: 'white',
-        border: '0px solid black',
-        visibility: 'hidden',
-    };
-
-    const reportButtonStyle: CSSProperties = {
-        position: 'absolute',
-        top: '131px',
-        left: '15px',
-        zIndex: 2000,
-        boxShadow: 'rgba(0, 0, 0, 0.2) 0px 1px 2px 0px',
-        pointerEvents: 'auto'
-    };
-
-    const reportFormStyle: CSSProperties = {
-        width: 'calc(100% - 300px)', // reducing width by 40px for a 20px margin on each side
-        margin: '0 150px',
-        marginTop: '20px',
-        height: 'auto)',
-        overflow: 'auto',
-        visibility: 'hidden',
-        backgroundColor: 'white',
-        border: '1px solid black',
-        padding: '20px', // added padding inside for spacing
-        boxSizing: 'border-box', // to ensure padding and border are included in the width
-        pointerEvents: 'auto',
-        position: 'relative'
-    };
-
-    const dropdownStyle: CSSProperties = {
-        width: '100%', // dropdown takes the full width of the parent
-        padding: '8px', // added padding for better appearance
-        marginBottom: '20px', // space between dropdowns and their labels
-        border: '1px solid #ccc', // grayish border for dropdown
-        borderRadius: '4px', // slightly rounded corners
-        fontSize: '16px', // size of the font in the dropdown
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // subtle shadow for depth
-        pointerEvents: 'auto'
-    };
 
     useEffect(() => {
         const LACountyWebMap = new WebMap({
@@ -806,230 +758,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
     };
 
-    const handleDatasetChange = (datasetId) => {
-        if (selectedDatasets.includes(datasetId)) {
-            setSelectedDatasets(prev => prev.filter(id => id !== datasetId));
-        } else {
-            setSelectedDatasets(prev => [...prev, datasetId]);
-        }
-    };
-
-    const createMask = async (geometry) => {
-        const mapView = mapViewRef.current;
-
-        // Create an instance of the GraphicsLayer
-        const maskLayer = new GraphicsLayer();
-
-        mapView.map.add(maskLayer);
-
-        // Create a large polygon that covers the whole map
-        const bigPolygon = new Polygon({
-            rings: [
-                [
-                    [-20037508.3427892, -20037508.3427892],
-                    [-20037508.3427892, 20037508.3427892],
-                    [20037508.3427892, 20037508.3427892],
-                    [20037508.3427892, -20037508.3427892],
-                    [-20037508.3427892, -20037508.3427892]
-                ]
-            ],
-            spatialReference: mapView.spatialReference
-        });
-
-        // Subtract the feature's geometry from the big polygon to get the mask
-        const mask = geometryEngine.difference(bigPolygon, geometry) as Polygon;
-
-        const symbol = new SimpleFillSymbol({
-            color: [0, 0, 0, 0],
-            outline: {
-                color: [0, 0, 0, 0],
-                width: 0
-            }
-        });
-
-        // Create a graphic for the mask
-        const maskGraphic = new Graphic({
-            geometry: mask,
-            symbol: symbol
-        });
-
-        // Clear previous mask graphics and add the new mask to the GraphicsLayer
-        maskLayer.graphics.removeAll();
-        maskLayer.graphics.add(maskGraphic);
-    };
-
-    const filterPointsWithinPolygon = async (record, datasetId) => {
-        console.log("Record:", record);
-        // Ensure currentLayerView is defined before proceeding
-        const currentLayerView = layerViews[datasetId];
-        if (!currentLayerView) {
-            console.error(`No layer view found for dataset ID: ${datasetId}`);
-            return;
-        }
-
-        // Check the geometry type of the layer
-        const geometryType = currentLayerView.layer.geometryType;
-
-        if (geometryType === "polygon") {
-            console.log("Clipping features within the polygon geometry.");
-            const featureLayer = currentLayerView.layer;
-
-            // Print the entire feature layer for debugging
-            console.log("Feature layer: ", featureLayer);
-
-            // Print the renderer object, which includes the symbology of the feature layer
-            console.log("Feature layer renderer: ", featureLayer.renderer);
-
-            // Retrieve the renderer from the feature layer
-            const featureLayerRenderer = featureLayer.renderer;
-            console.log(`Renderer type: ${featureLayerRenderer.type}`);
-
-            const query = featureLayer.createQuery();
-            query.geometry = record.geometry;
-            query.spatialRelationship = "intersects";
-
-            const defaultSymbol = {
-                type: "simple-fill", // autocasts as new SimpleFillSymbol()
-                color: "lightgray", // any light color to ensure visibility on the map
-                style: "solid",
-                outline: {  // autocasts as new SimpleLineSymbol()
-                    color: "darkgray",
-                    width: 1
-                }
-            };
-
-            try {
-                const features = await featureLayer.queryFeatures(query);
-                if (features.features.length > 0) {
-                    console.log("Features returned from query:", features.features.length);
-
-                    const intersectedFeatures = features.features.map(feature => {
-                        if (feature.geometry) {
-                            const intersectedGeometry = geometryEngine.intersect(feature.geometry, record.geometry) as Geometry;
-                            if (intersectedGeometry) {
-                                // For ClassBreaksRenderer, find the correct symbol based on the feature's attribute
-                                let symbol;
-                                if (featureLayerRenderer.type === "class-breaks") {
-                                    const attributeValue = feature.attributes[featureLayerRenderer.field];
-                                    for (let cb of featureLayerRenderer.classBreakInfos) {
-                                        if (attributeValue >= cb.minValue && attributeValue < cb.maxValue) {
-                                            symbol = cb.symbol.clone();
-                                            break;
-                                        }
-                                    }
-
-                                    setGlobalLegendData(prevData => {
-                                        const newData = { ...prevData }; // Clone the previous state to ensure immutability
-                                        const legendDataForCurrentDataset = featureLayerRenderer.classBreakInfos.map(info => {
-                                            const symbol = info.symbol.clone();
-
-                                            // Find the CIMSolidFill layer to access the color array
-                                            const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
-                                            if (fillLayer && fillLayer.color) {
-                                                const [r, g, b, a] = fillLayer.color; // Extract RGBA values
-                                                // Convert the RGBA array into a CSS-friendly color string
-                                                const rgbaColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
-                                                return {
-                                                    label: info.label,
-                                                    color: rgbaColor,
-                                                };
-                                            } else {
-                                                // Fallback color if the expected structure is not found
-                                                return {
-                                                    label: info.label,
-                                                    color: 'rgba(0, 0, 0, 1)', // Default to black or any suitable default
-                                                };
-                                            }
-                                        });
-
-                                        newData[datasetId] = legendDataForCurrentDataset;
-                                        return newData; // Return the new state
-                                    });
-
-
-                                } else if (featureLayerRenderer.type === "unique-value") {
-                                    // For UniqueValueRenderer, find the correct symbol based on the feature's attribute value
-                                    const attributeValue = feature.attributes[featureLayerRenderer.field]; // Assuming a single field for simplicity
-                                    for (let uv of featureLayerRenderer.uniqueValueInfos) {
-                                        if (uv.value === attributeValue) {
-                                            symbol = uv.symbol.clone();
-                                            break;
-                                        }
-                                    }
-                                }
-                                // Ensure a symbol was found or fallback to a default symbol
-                                symbol = symbol || defaultSymbol;
-
-                                // Create the graphic with the symbol
-                                return new Graphic({
-                                    geometry: intersectedGeometry,
-                                    attributes: feature.attributes,
-                                    symbol: symbol // Apply the symbol directly
-                                });
-                            }
-                        }
-                    }).filter(feature => feature);
-
-                    const graphicsLayer = new GraphicsLayer({
-                        graphics: intersectedFeatures
-                    });
-
-                    console.log("Intersected features:", intersectedFeatures.length);
-                    // After adding the intersected features to the map
-                    mapViewRef.current.map.add(graphicsLayer);
-
-                    console.log("Intersected features added to the map and legend displayed.");
-
-
-                    console.log("Intersected features added to the map.");
-
-                    mapViewRef.current.map.layers.remove(featureLayer);
-                    console.log("Original feature layer has been removed from the map.");
-
-                } else {
-                    console.log("No features returned from query.");
-                }
-            } catch (error) {
-                console.error("Failed to query or intersect features:", error);
-            }
-
-        } else if (geometryType === "point") {
-            console.log("Filtering points within the polygon geometry.");
-            currentLayerView.filter = {
-                geometry: record.geometry,
-                spatialRelationship: "intersects"
-            };
-        } else {
-            console.error("Unsupported geometry type for filtering or clipping.");
-        }
-    };
-
-    const getPointsInsideFeature = async (datasetId) => {
-        const currentLayerView = layerViews[datasetId];
-        if (!currentLayerView) {
-            console.error(`No layer view found for dataset ID: ${datasetId}`);
-            return Promise.reject(`No layer view found for dataset ID: ${datasetId}`);
-        }
-
-        try {
-            console.log("Querying features for dataset ID:", datasetId);
-            console.log("Current layer view:", currentLayerView);
-
-            // Corrected: Define query parameters using the layer property of the currentLayerView
-            const query = currentLayerView.layer.createQuery(); // This line is corrected
-            query.geometry = currentLayerView.filter.geometry; // Assuming 'filter' exists and has a 'geometry' property
-            query.spatialRelationship = "intersects";
-
-            // Use the layer to perform the query
-            const result = await currentLayerView.layer.queryFeatures(query); // This might also need correction based on context
-            pointsInsideFeatureCountRef.current = result.features.length;
-            return result.features.length;
-        } catch (error) {
-            console.error(`Error querying features for dataset ID: ${datasetId}`, error);
-            return 0;
-        }
-    };
-
+    // Get the handler function from the custom hook
+    const handleDatasetChange = useDatasetChangeHandler(selectedDatasets, setSelectedDatasets);
 
     function findLayerByDatasetId(datasetId) {
         const dataset = datasets.find(d => d.id === datasetId);
@@ -1240,91 +970,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 margin: [0, 0, 0, 20]
             };
 
-            function rgbaToHex(r, g, b) {
-                // Convert each number to a hexadecimal string and pad with zero if single digit
-                const toHex = c => ('0' + parseInt(c).toString(16)).slice(-2);
-                return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-            }
-
             const legendDataForDataset = globalLegendData[datasetId] || [];
-
-            // Create individual legend items
-            const legendItems = legendDataForDataset.map(item => {
-                const rgba = item.color.match(/\d+/g).map(Number);
-                const [r, g, b] = rgba;
-                const hexColor = rgbaToHex(r, g, b);
-
-                return {
-                    // Horizontal layout for each legend item
-                    columns: [
-                        {
-                            // Color patch
-                            canvas: [{
-                                type: 'rect',
-                                x: 0, y: 0,
-                                w: 40 * 2, // Width of the color patch
-                                h: 20 * 2, // Height of the color patch
-                                color: hexColor
-                            }],
-                            width: 80,
-                            height: 40,
-                            margin: [0, 5, 10, 5] // Top and bottom margin for vertical space between patches
-                        },
-                        {
-                            // Label to the right of the color patch
-                            text: item.label,
-                            fontSize: 14 * 1.5, // Increased font size for the label
-                            alignment: 'left',
-                            margin: [0, 11, 0, 0] // Center the label vertically next to the patch
-                        }
-                    ],
-                    columnGap: 10 // Space between the color patch and label
-                };
-            });
-
-            let legendLabel
-
-            if (legendItems.length > 0) {
-
-                // Manually add the "No data" legend item
-                const noDataLegendItem = {
-                    columns: [
-                        {
-                            // Gray color patch for "No data"
-                            canvas: [{
-                                type: 'rect',
-                                x: 0, y: 0,
-                                w: 80, // Match the width of other patches
-                                h: 40, // Match the height of other patches
-                                color: '#a1a1a1' // Gray color
-                            }],
-                            width: 80,
-                            height: 40,
-                            margin: [0, 5, 10, 5] // Top and bottom margin for vertical space between patches
-                        },
-                        {
-                            // Label for "No data"
-                            text: 'No data',
-                            fontSize: 21, // Match the font size of other labels
-                            alignment: 'left',
-                            margin: [0, 11, 0, 0] // Vertically center the label with the patch
-                        }
-                    ],
-                    columnGap: 10 // Space between the patch and label
-                };
-
-                // Add the "No data" legend item to the end of the legendItems array
-                legendItems.push(noDataLegendItem);
-
-
-                legendLabel = {
-                    text: 'Legend',
-                    fontSize: 48,
-                    bold: true,
-                    margin: [0, 20, 0, 10] // Margin below the 'Legend' title
-                };
-
-            }
+            let legendItems = generateLegendItems(legendDataForDataset);
 
             // Group the legend items into columns, each with two items
             const legendColumns = [];
@@ -1350,7 +997,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             legendColumns.forEach(column => {
                 column.width = 'auto'; // Set the width of the column to be automatic
             });
-
 
             // Define statistics inside the function to ensure it's unique for each slide
             const statistics = [
@@ -1677,11 +1323,18 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     });
                 });
 
-                await createMask(record.geometry);
+                await createMask(mapViewRef.current, record.geometry);
 
-                await filterPointsWithinPolygon(record, datasetId);
+                await filterPointsWithinPolygon(
+                    record,
+                    datasetId,
+                    layerViews, // This should be defined in your component state or context
+                    mapViewRef, // This should be your useRef hook reference
+                    setGlobalLegendData // Passing the setState function directly
+                );
 
-                await getPointsInsideFeature(datasetId);
+                const count = await getPointsInsideFeature(datasetId, layerViews);
+                pointsInsideFeatureCountRef.current = count;
 
                 await new Promise(resolve => setTimeout(resolve, 2000));
 
