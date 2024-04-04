@@ -17,7 +17,7 @@ import Geometry from "@arcgis/core/geometry/Geometry.js";
 import * as Logos from './logos';
 import { generateLegendItems } from './utils/legendUtils';
 import { mapStyle, reportButtonStyle, reportFormStyle, dropdownStyle } from './utils/customStyles';
-import { useDatasetChangeHandler } from './utils/formLogic'
+import { useDatasetChangeHandler, handleDropdownChange } from './utils/formLogic'
 import { createMask, filterPointsWithinPolygon, getPointsInsideFeature } from './utils/geospatialProcessing';
 
 const { useRef, useState, useEffect } = React;
@@ -43,6 +43,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [servicePlanningAreaList, setServicePlanningAreaList] = useState([]);
     const [supervisorDistrictList, setSupervisorDistrictList] = useState([]);
     const [selectedRecord, setSelectedRecord] = useState(null);
+    const [selectedRecordIndex, setSelectedRecordIndex] = React.useState("");
     const [showPDFPane, setShowPDFPane] = useState(false);
     const [isLoadingReport, setIsLoadingReport] = useState(false);
     const [imageDimensions, setImageDimensions] = useState(null);
@@ -55,7 +56,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const progressCtrRef = React.useRef(0);
     const slideCtrRef = React.useRef(0);
     const [blobURL, setBlobURL] = useState(null);
-    const [selectedRecordIndex, setSelectedRecordIndex] = React.useState("");
     const [farmersMarkets, setFarmersMarkets] = useState<FeatureLayer | null>(null);
     const [calFreshFoodRetailer, setCalFreshFoodRetailer] = useState<FeatureLayer | null>(null);
     const [calFreshRestaurant, setCalFreshRestaurant] = useState<FeatureLayer | null>(null);
@@ -110,7 +110,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
             const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(5) as GroupLayer;
             const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
-            const neightborhoodCharacteristics_GroupLayer = LACountyWebMap.layers.getItemAt(3) as GroupLayer;
+            const neighborhoodCharacteristics_GroupLayer = LACountyWebMap.layers.getItemAt(3) as GroupLayer;
             const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(0) as FeatureLayer;
             const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
             const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
@@ -152,9 +152,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             const disability_loading = disability.layers.getItemAt(5) as FeatureLayer;
             const healthInsurance = demographics.layers.getItemAt(0) as GroupLayer;
             const healthInsurance_loading = healthInsurance.layers.getItemAt(6) as FeatureLayer;
-            const healthyPlacesIndex_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const socialVulnerabilityIndex_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(1) as FeatureLayer;
-            const redlining_loading = neightborhoodCharacteristics_GroupLayer.layers.getItemAt(0) as FeatureLayer;
+            const healthyPlacesIndex_loading = neighborhoodCharacteristics_GroupLayer.layers.getItemAt(2) as FeatureLayer;
+            const socialVulnerabilityIndex_loading = neighborhoodCharacteristics_GroupLayer.layers.getItemAt(1) as FeatureLayer;
+            const redlining_loading = neighborhoodCharacteristics_GroupLayer.layers.getItemAt(0) as FeatureLayer;
 
             // Ensure the layer is fully loaded before using it
             farmersMarkets_loading.load().then(() => {
@@ -727,37 +727,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         });
     };
 
-    /**
-     * Handler for dropdown change event.
-     * @param {Event} event - The event object.
-     */
-    const handleDropdownChange = (event) => {
-        const selectedIndex = event.target.value;
-        setSelectedRecordIndex(selectedIndex);
-
-        let record;
-        if (boundaryType === "Neighborhood") {
-            record = neighborhoodList[selectedIndex];
-        } else if (boundaryType === "City") {
-            record = cityList[selectedIndex];
-        } else if (boundaryType === "Census Tract") {
-            record = censusTractList[selectedIndex];
-        } else if (boundaryType === "LA City Council Districts") {
-            record = cityCouncilDistrictsList[selectedIndex];
-        } else if (boundaryType === "Service Planning Area (SPA)") {
-            record = servicePlanningAreaList[selectedIndex];
-        } else if (boundaryType === "Supervisor District") {
-            record = supervisorDistrictList[selectedIndex];
-        }
-        else if (boundaryType === "Countywide Statistical Area (CSA)") {
-            record = CSAList[selectedIndex];
-        }
-
-        if (record) {
-            setSelectedRecord(record);
-        }
-    };
-
     // Get the handler function from the custom hook
     const handleDatasetChange = useDatasetChangeHandler(selectedDatasets, setSelectedDatasets);
 
@@ -783,8 +752,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
         const selectedFeatureName = featureName;
         const averagePerSquareMile = "#";
-
-        let statistics;
 
         let title_page;
 
@@ -1432,7 +1399,21 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>Please choose your boundary:</label>
                     <select
                         value={selectedRecordIndex}
-                        onChange={handleDropdownChange}
+                        onChange={(e) => handleDropdownChange(
+                            e,
+                            boundaryType,
+                            {
+                                neighborhoodList,
+                                cityList,
+                                censusTractList,
+                                cityCouncilDistrictsList,
+                                servicePlanningAreaList,
+                                supervisorDistrictList,
+                                CSAList,
+                            },
+                            setSelectedRecordIndex,
+                            setSelectedRecord
+                        )}
                         style={dropdownStyle}
                     >
                         <option value="" disabled selected>
