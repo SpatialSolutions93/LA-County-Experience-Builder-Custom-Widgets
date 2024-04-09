@@ -9,22 +9,55 @@ export function rgbaToHex(r: number, g: number, b: number): string {
 // Function to generate the legend items, including the "No data" item
 export function generateLegendItems(legendData: any[]): any[] {
     let legendItems = legendData.map(item => {
-        const rgba = item.color.match(/\d+/g).map(Number);
-        const [r, g, b] = rgba;
-        const hexColor = rgbaToHex(r, g, b);
+
+        console.log('item', item);
+        // Determine the fill color
+        const fillColor = item.color ? item.color : "rgba(0, 0, 0, 0)";
+
+        // Extract RGBA values for fill color
+        const fillRGBA = fillColor.match(/\d+/g).map(Number);
+        const [r2, g2, b2] = fillRGBA;
+        const fillHexColor = rgbaToHex(r2, g2, b2);
+
+        // Determine the outline color and width
+        const outlineColor = item.outlineColor || 'rgba(0, 0, 0, 0)'; // Default to fully transparent if no color provided
+        const outlineWidth = item.outlineWidth || 0; // Default to 0 if no width provided
+
+        // Extract RGBA values for outline color
+        const outlineRGBA = outlineColor.match(/\d+/g).map(Number);
+        const [r3, g3, b3] = outlineRGBA;
+        const outlineHexColor = rgbaToHex(r3, g3, b3);
+
+        // Adjust the position and size of the inner rectangle to accommodate the outline width
+        const innerRectSize = { w: 30 * 2, h: 15 * 2 };
+        const outerRectSize = { w: innerRectSize.w + outlineWidth * 2, h: innerRectSize.h + outlineWidth * 2 };
 
         return {
             columns: [
                 {
-                    canvas: [{
-                        type: 'rect',
-                        x: 0, y: 0,
-                        w: 40 * 2,
-                        h: 20 * 2,
-                        color: hexColor
-                    }],
-                    width: 80,
-                    height: 40,
+                    // Canvas with two rectangles to simulate fill and outline
+                    canvas: [
+                        // Outer rectangle for the outline
+                        {
+                            type: 'rect',
+                            x: 0,
+                            y: 0,
+                            w: outerRectSize.w,
+                            h: outerRectSize.h,
+                            color: outlineHexColor
+                        },
+                        // Inner rectangle for the fill
+                        {
+                            type: 'rect',
+                            x: outlineWidth,
+                            y: outlineWidth,
+                            w: innerRectSize.w,
+                            h: innerRectSize.h,
+                            color: fillHexColor
+                        }
+                    ],
+                    width: outerRectSize.w,
+                    height: outerRectSize.h,
                     margin: [0, 5, 10, 5]
                 },
                 {
@@ -45,12 +78,12 @@ export function generateLegendItems(legendData: any[]): any[] {
                 canvas: [{
                     type: 'rect',
                     x: 0, y: 0,
-                    w: 80,
-                    h: 40,
+                    w: 60,
+                    h: 30,
                     color: '#a1a1a1'
                 }],
-                width: 80,
-                height: 40,
+                width: 60,
+                height: 30,
                 margin: [0, 5, 10, 5]
             },
             {

@@ -155,31 +155,52 @@ export const filterPointsWithinPolygon = async (
                                 let matchingInfo = featureLayerRenderer.uniqueValueInfos.find(info => info.value == attributeValue);
 
                                 if (matchingInfo && matchingInfo.symbol) {
+                                    symbol = matchingInfo.symbol.clone();
+                                    console.log("Symbol found:", symbol);
 
                                     setGlobalLegendData(prevData => {
                                         const newData = { ...prevData };
-                                        const legendDataForCurrentDataset = featureLayerRenderer.uniqueValueInfos.map(info => {
-                                            symbol = matchingInfo.symbol.clone();
+                                        if (!newData[datasetId]) newData[datasetId] = [];
+
+                                        let fillColor = "rgba(0,0,0,0)"; // Default fill color
+                                        let outlineColor = "rgba(0,0,0,0)"; // Default outline color
+                                        let outlineWidth = 0;
 
 
+                                        console.log("Symbol type:", symbol.type);
+                                        // Check if it's a CIM symbol and handle accordingly
+                                        if (symbol.type === "cim") {
+                                            console.log("CIM symbol detected:", symbol);
                                             const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
+
+                                            console.log("Fill layer:", fillLayer);
                                             if (fillLayer && fillLayer.color) {
                                                 const [r, g, b, a] = fillLayer.color; // Extract RGBA values
                                                 const rgbaFillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
-                                                const strokeLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidStroke');
-                                                const [r2, g2, b2, a2] = strokeLayer.color; // Extract RGBA values
-                                                const rgbaOutlineColor = `rgba(${r2}, ${g2}, ${b2}, ${a2 / 255})`; // Adjust alpha to 0-1 scale if necessary
-                                                const outlineWidth = strokeLayer.width; // Assuming `width` is directly on the stroke layer
-
-                                                return {
-                                                    label: info.label,
-                                                    fillColor: rgbaFillColor,
-                                                    outlineColor: rgbaOutlineColor,
-                                                    outlineWidth: outlineWidth
-                                                };
+                                                console.log("Fill color:", rgbaFillColor);
                                             }
-                                        });
-                                        newData[datasetId] = legendDataForCurrentDataset;
+
+                                            const strokeLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidStroke');
+                                            console.log("Stroke layer:", strokeLayer);
+                                            if (strokeLayer && strokeLayer.color) {
+                                                const [r, g, b, a] = strokeLayer.color; // Extract RGBA values
+                                                const rgbaOutlineColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
+                                                console.log("Outline color:", rgbaOutlineColor);
+                                                outlineWidth = strokeLayer.width; // Assuming `width` is directly on the stroke layer
+                                                console.log("Outline width:", outlineWidth);
+                                            }
+                                        }
+
+                                        // Update or add the legend item
+                                        const existingLegendItem = newData[datasetId].find(item => item.label === matchingInfo.label);
+                                        if (!existingLegendItem) {
+                                            newData[datasetId].push({
+                                                label: matchingInfo.label,
+                                                fillColor: rgbaFillColor,
+                                                outlineColor: rgbaOutlineColor,
+                                                outlineWidth: outlineWidth
+                                            });
+                                        }
 
                                         return newData;
                                     });
