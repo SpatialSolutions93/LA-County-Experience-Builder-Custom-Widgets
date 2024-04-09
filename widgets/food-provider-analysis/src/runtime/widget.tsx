@@ -80,6 +80,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [depression, setDepression] = useState<FeatureLayer | null>(null);
     const [income, setIncome] = useState<FeatureLayer | null>(null);
     const [hispanic, setHispanic] = useState<FeatureLayer | null>(null);
+    const [race, setRace] = useState<FeatureLayer | null>(null);
+    const [age, setAge] = useState<FeatureLayer | null>(null);
     const [englishSecondLanguage, setEnglishSecondLanguage] = useState<FeatureLayer | null>(null);
     const [immigrationStatus, setImmigrationStatus] = useState<FeatureLayer | null>(null);
     const [vehicleOwnershipLandowners, setVehicleOwnershipLandowners] = useState<FeatureLayer | null>(null);
@@ -102,59 +104,76 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
         LACountyWebMap.load().then(() => {
 
-            const schools = LACountyWebMap.layers.getItemAt(1) as GroupLayer;
-            const greenAndGardenSpaces = LACountyWebMap.layers.getItemAt(2) as GroupLayer;
-            const demographics = LACountyWebMap.layers.getItemAt(4) as GroupLayer; // NEW
-            const retailFoodOutlets = LACountyWebMap.layers.getItemAt(6) as GroupLayer;
             const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
-            const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
-            const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(5) as GroupLayer;
-            const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
-            const neighborhoodCharacteristics_GroupLayer = LACountyWebMap.layers.getItemAt(3) as GroupLayer;
-            const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(0) as FeatureLayer;
-            const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
-            const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
-            const communityGardens_loading = greenAndGardenSpaces.layers.getItemAt(2) as FeatureLayer;
-            const foodPantry_loading = foodAssistanceAndBenefits.layers.getItemAt(0) as FeatureLayer;
-            const parks_loading = greenAndGardenSpaces.layers.getItemAt(1) as FeatureLayer;
-            const parksAndGardens_loading = greenAndGardenSpaces.layers.getItemAt(0) as FeatureLayer;
-            const poverty = demographics.layers.getItemAt(8) as GroupLayer; // NEW
-            const poverty_loading = poverty.layers.getItemAt(5) as FeatureLayer;
-            const publicElementarySchools_loading = schools.layers.getItemAt(2) as FeatureLayer;
-            const publicHighSchools_loading = schools.layers.getItemAt(0) as FeatureLayer;
-            const publicMiddleSchools_loading = schools.layers.getItemAt(1) as FeatureLayer;
-            const restaurants_loading = restaurants_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const retailFoodMarkets_loading = retailFoodMarkets_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(1) as FeatureLayer;
+
             const calFreshCases_loading = foodAssistanceAndBenefits.layers.getItemAt(5) as FeatureLayer;
             const calFreshGap_loading = foodAssistanceAndBenefits.layers.getItemAt(4) as FeatureLayer;
+            const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
+            const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
+            const wicFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(1) as FeatureLayer;
+            const foodPantry_loading = foodAssistanceAndBenefits.layers.getItemAt(0) as FeatureLayer;
+
+            const retailFoodOutlets = LACountyWebMap.layers.getItemAt(6) as GroupLayer;
+
+            const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
+            const restaurants_loading = restaurants_GroupLayer.layers.getItemAt(2) as FeatureLayer;
+            const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
+            const retailFoodMarkets_loading = retailFoodMarkets_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const groceryStoresSupermarkets_loading = retailFoodOutlets.layers.getItemAt(1) as FeatureLayer;
+            const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(0) as FeatureLayer;
+
+            const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(5) as GroupLayer;
+
             const foodInsecurity_loading = residentHealth_GroupLayer.layers.getItemAt(4) as FeatureLayer;
             const obesity_loading = residentHealth_GroupLayer.layers.getItemAt(3) as FeatureLayer;
             const diabetes_loading = residentHealth_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const heartDisease_loading = residentHealth_GroupLayer.layers.getItemAt(1) as FeatureLayer;
             const depression_loading = residentHealth_GroupLayer.layers.getItemAt(0) as FeatureLayer;
-            const income_group_loading = demographics.layers.getItemAt(9) as GroupLayer;
+
+            const demographics = LACountyWebMap.layers.getItemAt(4) as GroupLayer;
+
+            const income_group_loading = demographics.layers.getItemAt(11) as GroupLayer;
             const income_loading = income_group_loading.layers.getItemAt(5) as FeatureLayer;
-            const hispanic_group_loading = demographics.layers.getItemAt(7) as GroupLayer;
+            const poverty = demographics.layers.getItemAt(10) as GroupLayer; // NEW
+            const poverty_loading = poverty.layers.getItemAt(5) as FeatureLayer;
+            const hispanic_group_loading = demographics.layers.getItemAt(9) as GroupLayer;
             const hispanic_loading = hispanic_group_loading.layers.getItemAt(5) as FeatureLayer;
-            const englishSecondLanguage = demographics.layers.getItemAt(6) as GroupLayer;
+            const race_group_loading = demographics.layers.getItemAt(8) as GroupLayer;
+            const race_loading = race_group_loading.layers.getItemAt(11) as FeatureLayer;
+            const englishSecondLanguage = demographics.layers.getItemAt(7) as GroupLayer;
             const englishSecondLanguage_loading = englishSecondLanguage.layers.getItemAt(5) as FeatureLayer;
-            const immigrationStatus = demographics.layers.getItemAt(5) as GroupLayer;
+            const immigrationStatus = demographics.layers.getItemAt(6) as GroupLayer;
             const immigrationStatus_loading = immigrationStatus.layers.getItemAt(5) as FeatureLayer;
-            const vehicleOwnershipRenters = demographics.layers.getItemAt(3) as GroupLayer;
-            const vehicleOwnershipRenters_loading = vehicleOwnershipRenters.layers.getItemAt(5) as FeatureLayer;
-            const vehicleOwnershipLandowners = demographics.layers.getItemAt(4) as GroupLayer;
+            const vehicleOwnershipLandowners = demographics.layers.getItemAt(5) as GroupLayer;
             const vehicleOwnershipLandowners_loading = vehicleOwnershipLandowners.layers.getItemAt(5) as FeatureLayer;
-            const householdSize = demographics.layers.getItemAt(2) as GroupLayer;
+            const vehicleOwnershipRenters = demographics.layers.getItemAt(4) as GroupLayer;
+            const vehicleOwnershipRenters_loading = vehicleOwnershipRenters.layers.getItemAt(5) as FeatureLayer;
+            const householdSize = demographics.layers.getItemAt(3) as GroupLayer;
             const householdSize_loading = householdSize.layers.getItemAt(5) as FeatureLayer;
-            const disability = demographics.layers.getItemAt(1) as GroupLayer;
+            const disability = demographics.layers.getItemAt(2) as GroupLayer;
             const disability_loading = disability.layers.getItemAt(5) as FeatureLayer;
-            const healthInsurance = demographics.layers.getItemAt(0) as GroupLayer;
+            const healthInsurance = demographics.layers.getItemAt(1) as GroupLayer;
             const healthInsurance_loading = healthInsurance.layers.getItemAt(6) as FeatureLayer;
+            const age_group_loading = demographics.layers.getItemAt(0) as GroupLayer;
+            const age_loading = age_group_loading.layers.getItemAt(5) as FeatureLayer;
+
+            const neighborhoodCharacteristics_GroupLayer = LACountyWebMap.layers.getItemAt(3) as GroupLayer;
+
             const healthyPlacesIndex_loading = neighborhoodCharacteristics_GroupLayer.layers.getItemAt(2) as FeatureLayer;
             const socialVulnerabilityIndex_loading = neighborhoodCharacteristics_GroupLayer.layers.getItemAt(1) as FeatureLayer;
             const redlining_loading = neighborhoodCharacteristics_GroupLayer.layers.getItemAt(0) as FeatureLayer;
+
+            const greenAndGardenSpaces = LACountyWebMap.layers.getItemAt(2) as GroupLayer;
+
+            const communityGardens_loading = greenAndGardenSpaces.layers.getItemAt(2) as FeatureLayer;
+            const parks_loading = greenAndGardenSpaces.layers.getItemAt(1) as FeatureLayer;
+            const parksAndGardens_loading = greenAndGardenSpaces.layers.getItemAt(0) as FeatureLayer;
+
+            const schools = LACountyWebMap.layers.getItemAt(1) as GroupLayer;
+
+            const publicElementarySchools_loading = schools.layers.getItemAt(2) as FeatureLayer;
+            const publicMiddleSchools_loading = schools.layers.getItemAt(1) as FeatureLayer;
+            const publicHighSchools_loading = schools.layers.getItemAt(0) as FeatureLayer;
 
             // Ensure the layer is fully loaded before using it
             farmersMarkets_loading.load().then(() => {
@@ -297,6 +316,17 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
+            race_loading.load().then(() => {
+                setRace(race_loading);
+            }).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
+            age_loading.load().then(() => {
+                setAge(age_loading);
+            }
+            ).catch(error => {
+                console.error("Error loading layer: ", error);
+            });
             englishSecondLanguage_loading.load().then(() => {
                 setEnglishSecondLanguage(englishSecondLanguage_loading);
             }).catch(error => {
@@ -354,40 +384,42 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }, []);
 
     const datasets = [
-        { id: 1, name: "CalFresh Cases", dataSource: calFreshCases },
-        { id: 2, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
-        { id: 3, name: "CalFresh Gap", dataSource: calFreshGap },
-        { id: 4, name: "CalFresh Restaurants", dataSource: calFreshRestaurant },
-        { id: 5, name: "Community Gardens", dataSource: communityGardens },
-        { id: 6, name: "Depression", dataSource: depression },
-        { id: 7, name: "Diabetes", dataSource: diabetes },
-        { id: 8, name: "Disability", dataSource: disability },
-        { id: 9, name: "English Second Language", dataSource: englishSecondLanguage },
-        { id: 10, name: "Farmer's Markets", dataSource: farmersMarkets },
-        { id: 11, name: "Food Insecurity", dataSource: foodInsecurity },
-        { id: 12, name: "Food Pantries", dataSource: foodPantry },
-        { id: 13, name: "Grocery Stores/Supermarkets", dataSource: groceryStoresSupermarkets },
-        { id: 14, name: "Health Insurance", dataSource: healthInsurance },
-        { id: 15, name: "Healthy Places Index", dataSource: healthyPlacesIndex },
-        { id: 16, name: "Heart Disease", dataSource: heartDisease },
-        { id: 17, name: "Hispanic or Latino", dataSource: hispanic },
-        { id: 18, name: "Household Size", dataSource: householdSize },
-        { id: 19, name: "Immigration Status", dataSource: immigrationStatus },
-        { id: 20, name: "Income", dataSource: income },
-        { id: 21, name: "Obesity", dataSource: obesity },
-        { id: 22, name: "Parks", dataSource: parks },
-        { id: 23, name: "Parks and Gardens", dataSource: parksAndGardens },
-        { id: 24, name: "Poverty", dataSource: poverty }, // NEW
-        { id: 25, name: "Public Elementary Schools", dataSource: publicElementarySchools },
-        { id: 26, name: "Public High Schools", dataSource: publicHighSchools },
-        { id: 27, name: "Public Middle Schools", dataSource: publicMiddleSchools },
-        { id: 28, name: "Redlining", dataSource: redlining },
-        { id: 29, name: "Restaurants", dataSource: restaurants },
-        { id: 30, name: "Retail Food Markets", dataSource: retailFoodMarkets },
-        { id: 31, name: "Social Vulnerability Index", dataSource: socialVulnerabilityIndex },
-        { id: 32, name: "Vehicle Ownership (Landowners)", dataSource: vehicleOwnershipLandowners },
-        { id: 33, name: "Vehicle Ownership (Renters)", dataSource: vehicleOwnershipRenters },
-        { id: 34, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
+        { id: 1, name: "Age", dataSource: age },
+        { id: 2, name: "CalFresh Cases", dataSource: calFreshCases },
+        { id: 3, name: "CalFresh Food Retailers", dataSource: calFreshFoodRetailer },
+        { id: 4, name: "CalFresh Gap", dataSource: calFreshGap },
+        { id: 5, name: "CalFresh Restaurants", dataSource: calFreshRestaurant },
+        { id: 6, name: "Community Gardens", dataSource: communityGardens },
+        { id: 7, name: "Depression", dataSource: depression },
+        { id: 8, name: "Detailed Race and Ethnicity", dataSource: race },
+        { id: 9, name: "Diabetes", dataSource: diabetes },
+        { id: 10, name: "Disability", dataSource: disability },
+        { id: 11, name: "English Second Language", dataSource: englishSecondLanguage },
+        { id: 12, name: "Farmer's Markets", dataSource: farmersMarkets },
+        { id: 13, name: "Food Insecurity", dataSource: foodInsecurity },
+        { id: 14, name: "Food Pantries", dataSource: foodPantry },
+        { id: 15, name: "Grocery Stores/Supermarkets", dataSource: groceryStoresSupermarkets },
+        { id: 16, name: "Health Insurance", dataSource: healthInsurance },
+        { id: 17, name: "Healthy Places Index", dataSource: healthyPlacesIndex },
+        { id: 18, name: "Heart Disease", dataSource: heartDisease },
+        { id: 19, name: "Hispanic or Latino", dataSource: hispanic },
+        { id: 20, name: "Household Size", dataSource: householdSize },
+        { id: 21, name: "Immigration Status", dataSource: immigrationStatus },
+        { id: 22, name: "Income", dataSource: income },
+        { id: 23, name: "Obesity", dataSource: obesity },
+        { id: 24, name: "Parks", dataSource: parks },
+        { id: 25, name: "Parks and Gardens", dataSource: parksAndGardens },
+        { id: 26, name: "Poverty", dataSource: poverty }, // NEW
+        { id: 27, name: "Public Elementary Schools", dataSource: publicElementarySchools },
+        { id: 28, name: "Public High Schools", dataSource: publicHighSchools },
+        { id: 29, name: "Public Middle Schools", dataSource: publicMiddleSchools },
+        { id: 30, name: "Redlining", dataSource: redlining },
+        { id: 31, name: "Restaurants", dataSource: restaurants },
+        { id: 32, name: "Retail Food Markets", dataSource: retailFoodMarkets },
+        { id: 33, name: "Social Vulnerability Index", dataSource: socialVulnerabilityIndex },
+        { id: 34, name: "Vehicle Ownership (Landowners)", dataSource: vehicleOwnershipLandowners },
+        { id: 35, name: "Vehicle Ownership (Renters)", dataSource: vehicleOwnershipRenters },
+        { id: 36, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
     ];
 
     function getDatasetName(datasetId) {
@@ -548,138 +580,146 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         if (mapViewRef.current) {
 
             if (selectedDatasets.includes(1)) {
-                webmap.add(calFreshCases);
+                webmap.add(age);
             }
 
             if (selectedDatasets.includes(2)) {
-                webmap.add(calFreshFoodRetailer);
+                webmap.add(calFreshCases);
             }
 
             if (selectedDatasets.includes(3)) {
-                webmap.add(calFreshGap);
+                webmap.add(calFreshFoodRetailer);
             }
 
             if (selectedDatasets.includes(4)) {
-                webmap.add(calFreshRestaurant);
+                webmap.add(calFreshGap);
             }
 
             if (selectedDatasets.includes(5)) {
-                webmap.add(communityGardens);
+                webmap.add(calFreshRestaurant);
             }
 
             if (selectedDatasets.includes(6)) {
-                webmap.add(depression);
+                webmap.add(communityGardens);
             }
 
             if (selectedDatasets.includes(7)) {
-                webmap.add(diabetes);
+                webmap.add(depression);
             }
 
             if (selectedDatasets.includes(8)) {
-                webmap.add(disability);
+                webmap.add(race);
             }
 
             if (selectedDatasets.includes(9)) {
-                webmap.add(englishSecondLanguage);
+                webmap.add(diabetes);
             }
 
             if (selectedDatasets.includes(10)) {
-                webmap.add(farmersMarkets);
+                webmap.add(disability);
             }
 
             if (selectedDatasets.includes(11)) {
-                webmap.add(foodInsecurity);
+                webmap.add(englishSecondLanguage);
             }
 
             if (selectedDatasets.includes(12)) {
-                webmap.add(foodPantry);
+                webmap.add(farmersMarkets);
             }
 
             if (selectedDatasets.includes(13)) {
-                webmap.add(groceryStoresSupermarkets);
+                webmap.add(foodInsecurity);
             }
 
             if (selectedDatasets.includes(14)) {
-                webmap.add(healthInsurance);
+                webmap.add(foodPantry);
             }
 
             if (selectedDatasets.includes(15)) {
-                webmap.add(healthyPlacesIndex);
+                webmap.add(groceryStoresSupermarkets);
             }
 
             if (selectedDatasets.includes(16)) {
-                webmap.add(heartDisease);
+                webmap.add(healthInsurance);
             }
 
             if (selectedDatasets.includes(17)) {
-                webmap.add(hispanic);
+                webmap.add(healthyPlacesIndex);
             }
 
             if (selectedDatasets.includes(18)) {
-                webmap.add(householdSize);
+                webmap.add(heartDisease);
             }
 
             if (selectedDatasets.includes(19)) {
-                webmap.add(immigrationStatus);
+                webmap.add(hispanic);
             }
 
             if (selectedDatasets.includes(20)) {
-                webmap.add(income);
+                webmap.add(householdSize);
             }
 
             if (selectedDatasets.includes(21)) {
-                webmap.add(obesity);
+                webmap.add(immigrationStatus);
             }
 
             if (selectedDatasets.includes(22)) {
-                webmap.add(parks);
+                webmap.add(income);
             }
 
             if (selectedDatasets.includes(23)) {
-                webmap.add(parksAndGardens);
+                webmap.add(obesity);
             }
 
             if (selectedDatasets.includes(24)) {
-                webmap.add(poverty);
+                webmap.add(parks);
             }
 
             if (selectedDatasets.includes(25)) {
-                webmap.add(publicElementarySchools);
+                webmap.add(parksAndGardens);
             }
 
             if (selectedDatasets.includes(26)) {
-                webmap.add(publicHighSchools);
+                webmap.add(poverty);
             }
 
             if (selectedDatasets.includes(27)) {
-                webmap.add(publicMiddleSchools);
+                webmap.add(publicElementarySchools);
             }
 
             if (selectedDatasets.includes(28)) {
-                webmap.add(redlining);
+                webmap.add(publicHighSchools);
             }
 
             if (selectedDatasets.includes(29)) {
-                webmap.add(restaurants);
+                webmap.add(publicMiddleSchools);
             }
 
             if (selectedDatasets.includes(30)) {
-                webmap.add(retailFoodMarkets);
+                webmap.add(redlining);
             }
 
             if (selectedDatasets.includes(31)) {
-                webmap.add(socialVulnerabilityIndex);
+                webmap.add(restaurants);
             }
 
             if (selectedDatasets.includes(32)) {
-                webmap.add(vehicleOwnershipLandowners);
+                webmap.add(retailFoodMarkets);
             }
 
             if (selectedDatasets.includes(33)) {
-                webmap.add(vehicleOwnershipRenters);
+                webmap.add(socialVulnerabilityIndex);
             }
 
             if (selectedDatasets.includes(34)) {
+                webmap.add(vehicleOwnershipLandowners);
+            }
+
+            if (selectedDatasets.includes(35)) {
+                webmap.add(vehicleOwnershipRenters);
+            }
+
+            if (selectedDatasets.includes(36)) {
                 webmap.add(wicFoodRetailer);
             }
 
