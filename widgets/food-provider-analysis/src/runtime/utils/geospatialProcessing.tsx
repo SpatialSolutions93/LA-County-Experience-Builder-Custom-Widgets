@@ -4,11 +4,10 @@ import type { SetStateAction, Dispatch } from 'react';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Polygon from "@arcgis/core/geometry/Polygon";
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
-import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
 import type { Geometry } from "@arcgis/core/geometry";
+import { set } from 'seamless-immutable';
 
 // Define the createMask function which creates and returns a mask Graphic
 export const createMask = async (mapView, geometry) => {
@@ -54,13 +53,15 @@ export const createMask = async (mapView, geometry) => {
 
 // Define the type for your setGlobalLegendData function if needed
 type SetGlobalLegendDataType = Dispatch<SetStateAction<Record<string, any>>>;
+type setGlobalSymbolType = Dispatch<SetStateAction<Record<string, any>>>;
 
 export const filterPointsWithinPolygon = async (
     record,
     datasetId,
     layerViews,
     mapViewRef,
-    setGlobalLegendData: SetGlobalLegendDataType // This is your callback function
+    setGlobalLegendData: SetGlobalLegendDataType, // This is your callback function
+    setGlobalSymbol: setGlobalSymbolType
 ): Promise<void> => {
     // Function implementation
     console.log("Record:", record);
@@ -122,6 +123,12 @@ export const filterPointsWithinPolygon = async (
                                     }
                                 }
 
+                                setGlobalSymbol(prevData => {
+                                    const newData = { ...prevData };
+                                    newData[datasetId] = "class-breaks";
+                                    return newData;
+                                });
+
                                 setGlobalLegendData(prevData => {
                                     const newData = { ...prevData }; // Clone the previous state to ensure immutability
                                     const legendDataForCurrentDataset = featureLayerRenderer.classBreakInfos.map(info => {
@@ -155,6 +162,12 @@ export const filterPointsWithinPolygon = async (
                                 let matchingInfo = featureLayerRenderer.uniqueValueInfos.find(info => info.value == attributeValue);
 
                                 if (matchingInfo && matchingInfo.symbol) {
+
+                                    setGlobalSymbol(prevData => {
+                                        const newData = { ...prevData };
+                                        newData[datasetId] = "unique-value";
+                                        return newData;
+                                    });
 
                                     setGlobalLegendData(prevData => {
                                         const newData = { ...prevData };

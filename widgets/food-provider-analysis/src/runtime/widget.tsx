@@ -90,6 +90,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [socialVulnerabilityIndex, setSocialVulnerabilityIndex] = useState<FeatureLayer | null>(null);
     const [redlining, setRedlining] = useState<FeatureLayer | null>(null);
     const [globalLegendData, setGlobalLegendData] = React.useState({});
+    const [globalSymbol, setGlobalSymbol] = React.useState<Record<string, any>>({});
     const pointsInsideFeatureCountRef = React.useRef(null);
 
     useEffect(() => {
@@ -975,7 +976,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             };
 
             const legendDataForDataset = globalLegendData[datasetId] || [];
-            let legendItems = generateLegendItems(legendDataForDataset);
+            // Assuming this is called within a component that has access to `globalSymbol`
+            const currentSymbolType = globalSymbol[datasetId] || 'no-symbol'; // Use a default/fallback symbol type if needed
+            let legendItems = generateLegendItems(legendDataForDataset, currentSymbolType);
+
 
             // Group the legend items into columns, each with two items
             const legendColumns = [];
@@ -1334,7 +1338,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     datasetId,
                     layerViews, // This should be defined in your component state or context
                     mapViewRef, // This should be your useRef hook reference
-                    setGlobalLegendData // Passing the setState function directly
+                    setGlobalLegendData, // Passing the setState function directly
+                    setGlobalSymbol
                 );
 
                 const count = await getPointsInsideFeature(datasetId, layerViews);

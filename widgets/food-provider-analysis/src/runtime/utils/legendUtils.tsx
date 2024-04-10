@@ -7,7 +7,7 @@ export function rgbaToHex(r: number, g: number, b: number): string {
 }
 
 // Function to generate the legend items, including the "No data" item
-export function generateLegendItems(legendData: any[]): any[] {
+export function generateLegendItems(legendData: any[], globalSymbol: string): any[] {
     let legendItems = legendData.map(item => {
 
         console.log('item', item);
@@ -84,31 +84,32 @@ export function generateLegendItems(legendData: any[]): any[] {
         };
     });
 
-    // Add "No data" item
-    const noDataLegendItem = {
-        columns: [
-            {
-                canvas: [{
-                    type: 'rect',
-                    x: 0, y: 0,
-                    w: 60,
-                    h: 30,
-                    color: '#a1a1a1'
-                }],
-                width: 60,
-                height: 30,
-                margin: [0, 5, 10, 5]
-            },
-            {
-                text: 'No data',
-                fontSize: 21,
-                alignment: 'left',
-                margin: [0, 11, 0, 0]
-            }
-        ],
-        columnGap: 10
-    };
+    if (globalSymbol === "class-breaks") {
+        const noDataLegendItem = {
+            columns: [
+                {
+                    canvas: [{
+                        type: 'rect',
+                        x: 0, y: 0,
+                        w: 60,
+                        h: 30,
+                        color: '#a1a1a1'
+                    }],
+                    width: 60,
+                    height: 30,
+                    margin: [0, 5, 10, 5]
+                },
+                {
+                    text: 'No data',
+                    fontSize: 21,
+                    alignment: 'left',
+                    margin: [0, 11, 0, 0]
+                }
+            ],
+            columnGap: 10
+        };
 
-    legendItems.push(noDataLegendItem);
+        legendItems.push(noDataLegendItem);
+    }
     return legendItems;
 }
