@@ -9,8 +9,6 @@ export function rgbaToHex(r: number, g: number, b: number): string {
 // Function to generate the legend items, including the "No data" item
 export function generateLegendItems(legendData: any[], globalSymbol: string): any[] {
     let legendItems = legendData.map(item => {
-
-        console.log('item', item);
         // Determine the fill color
         let fillColor = item.color ? item.color : "rgba(0, 0, 0, 0)";
 
@@ -26,7 +24,7 @@ export function generateLegendItems(legendData: any[], globalSymbol: string): an
         // Determine the outline color and width
         let outlineColor = item.outlineColor || 'rgba(0, 0, 0, 0)'; // Default to fully transparent if no color provided
 
-        console.log('outlineColor', outlineColor);
+        console.log("outlineColor: ", outlineColor);
 
         const outlineWidth = item.outlineWidth || 0; // Default to 0 if no width provided
 

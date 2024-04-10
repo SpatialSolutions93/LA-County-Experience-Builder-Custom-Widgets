@@ -160,36 +160,43 @@ export const filterPointsWithinPolygon = async (
 
                                     setGlobalLegendData(prevData => {
                                         const newData = { ...prevData };
-                                        const legendDataForCurrentDataset = featureLayerRenderer.uniqueValueInfos.map(info => {
-                                            symbol = matchingInfo.symbol.clone();
+                                        // Initialize an empty array to track unique outline colors
+                                        let uniqueOutlineColors = [];
 
-                                            console.log("Symbol:", symbol); // Debugging
-
-                                            console.log("Symbol data:", symbol.data.symbol.symbolLayers); // Debugging
-
-
+                                        const legendDataForCurrentDataset = featureLayerRenderer.uniqueValueInfos.reduce((acc, info) => {
+                                            const symbol = info.symbol.clone();
                                             const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
-                                            if (fillLayer && fillLayer.color) {
-                                                const [r, g, b, a] = fillLayer.color; // Extract RGBA values
-                                                const rgbaFillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
-                                                const strokeLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidStroke');
-                                                const [r2, g2, b2, a2] = strokeLayer.color; // Extract RGBA values
-                                                console.log("Stroke layer:", strokeLayer); // Debugging
-                                                const rgbaOutlineColor = `rgba(${r2}, ${g2}, ${b2}, ${a2 / 255})`; // Adjust alpha to 0-1 scale if necessary
-                                                const outlineWidth = strokeLayer.width; // Assuming `width` is directly on the stroke layer
+                                            const strokeLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidStroke');
 
-                                                return {
-                                                    label: info.label,
-                                                    fillColor: rgbaFillColor,
-                                                    outlineColor: rgbaOutlineColor,
-                                                    outlineWidth: outlineWidth
-                                                };
+                                            if (fillLayer && fillLayer.color && strokeLayer && strokeLayer.color) {
+                                                const [r, g, b, a] = fillLayer.color; // Extract RGBA values for fill color
+                                                const rgbaFillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
+
+                                                const [r2, g2, b2, a2] = strokeLayer.color; // Extract RGBA values for outline color
+                                                const rgbaOutlineColor = `rgba(${r2}, ${g2}, ${b2}, ${a2 / 255})`;
+
+                                                // Check if the outline color is already in the uniqueOutlineColors array
+                                                if (!uniqueOutlineColors.includes(rgbaOutlineColor)) {
+                                                    uniqueOutlineColors.push(rgbaOutlineColor); // Add new unique color to the list
+
+                                                    // Include this item in the accumulator for the legend data
+                                                    acc.push({
+                                                        label: info.label,
+                                                        fillColor: rgbaFillColor,
+                                                        outlineColor: rgbaOutlineColor,
+                                                        outlineWidth: strokeLayer.width // Assuming `width` is directly on the stroke layer
+                                                    });
+                                                }
                                             }
-                                        });
+
+                                            return acc;
+                                        }, []); // Start with an empty array accumulator
+
                                         newData[datasetId] = legendDataForCurrentDataset;
 
                                         return newData;
                                     });
+
                                 }
                             }
 
