@@ -786,8 +786,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
 
-        console.log('Image dimensions:', 864, 647.3653281096964);
-
         const selectedFeatureName = featureName;
         const averagePerSquareMile = "#";
 
@@ -856,10 +854,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 margin: [0, 0, 0, 220]
             };
 
-            console.log("Dataset ID:", datasetId);
-
-
-            console.log('Generating slide for dataset:', selectedFeatureName);
             console.log('Dataset name:', datasetName);
 
             let textGroup;
@@ -1006,8 +1000,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 column.width = 'auto'; // Set the width of the column to be automatic
             });
 
-            // Define statistics inside the function to ensure it's unique for each slide
-            const statistics = [
+            // Start with the initial parts of the statistics that are always included
+            let statistics = [
                 headerWithRectangles,
                 coloredLine,
                 textGroup,
@@ -1025,24 +1019,31 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             width: 365,
                             absolutePosition: { x: 270, y: 928 }
                         },
-                        // Adding text next to the USC logo
+                    ]
+                }
+            ];
+
+            // Define statistics inside the function to ensure it's unique for each slide
+            if (currentSymbolType !== "no-symbol") {
+                // Append the legend parts to the statistics array
+                statistics.push({
+                    columns: [
                         {
-                            // Assuming you want the text to be vertically aligned with the USC logo,
-                            // adjust `y` to match and `x` to position to the right of the logo
+                            // This might be redundant if you're including a separate legend stack below
+                            // Remove this part if not needed
                             text: 'Legend',
-                            fontSize: 48, // Adjust font size as needed
+                            fontSize: 48,
                             bold: true,
-                            absolutePosition: { x: 920, y: 878 }, // Adjust x to position right of the USC logo
-                            // If more styling is needed, use a stack or additional properties
+                            absolutePosition: { x: 920, y: 878 },
                         },
                         {
                             stack: [
                                 {
-                                    // The "Legend" title setup
+                                    // The "Legend" title setup, assuming you need it
                                     text: 'Legend',
-                                    fontSize: 48, // Adjust font size as needed
+                                    fontSize: 48,
                                     bold: true,
-                                    absolutePosition: { x: 920, y: 878 }, // Adjust x to position right of the USC logo
+                                    absolutePosition: { x: 920, y: 878 },
                                 },
                                 legendRow // Insert the dynamically generated legend items here
                             ],
@@ -1050,8 +1051,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                             absolutePosition: { x: 920, y: 945 }
                         }
                     ]
-                }
-            ];
+                });
+            }
 
             return {
                 table: {

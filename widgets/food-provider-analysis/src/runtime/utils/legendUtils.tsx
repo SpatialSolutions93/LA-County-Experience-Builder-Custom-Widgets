@@ -14,8 +14,6 @@ export function generateLegendItems(legendData: any[], globalSymbol: string): an
         // Determine the fill color
         let fillColor = item.color ? item.color : "rgba(0, 0, 0, 0)";
 
-        console.log('fillColor', fillColor);
-
         // Extract RGBA values for fill color
         let fillRGBA = fillColor.match(/\d+/g).map(Number);
         // Check if alpha value is 0 and adjust RGB to white if so

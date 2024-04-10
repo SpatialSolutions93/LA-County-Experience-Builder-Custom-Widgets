@@ -63,8 +63,6 @@ export const filterPointsWithinPolygon = async (
     setGlobalLegendData: SetGlobalLegendDataType, // This is your callback function
     setGlobalSymbol: setGlobalSymbolType
 ): Promise<void> => {
-    // Function implementation
-    console.log("Record:", record);
     // Ensure currentLayerView is defined before proceeding
     const currentLayerView = layerViews[datasetId];
     if (!currentLayerView) {
@@ -76,18 +74,10 @@ export const filterPointsWithinPolygon = async (
     const geometryType = currentLayerView.layer.geometryType;
 
     if (geometryType === "polygon") {
-        console.log("Clipping features within the polygon geometry.");
         const featureLayer = currentLayerView.layer;
-
-        // Print the entire feature layer for debugging
-        console.log("Feature layer: ", featureLayer);
-
-        // Print the renderer object, which includes the symbology of the feature layer
-        console.log("Feature layer renderer: ", featureLayer.renderer);
 
         // Retrieve the renderer from the feature layer
         const featureLayerRenderer = featureLayer.renderer;
-        console.log(`Renderer type: ${featureLayerRenderer.type}`);
 
         const query = featureLayer.createQuery();
         query.geometry = record.geometry;
@@ -106,7 +96,6 @@ export const filterPointsWithinPolygon = async (
         try {
             const features = await featureLayer.queryFeatures(query);
             if (features.features.length > 0) {
-                console.log("Features returned from query:", features.features.length);
 
                 const intersectedFeatures = features.features.map(feature => {
                     if (feature.geometry) {
@@ -181,13 +170,11 @@ export const filterPointsWithinPolygon = async (
 
                                             const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
                                             if (fillLayer && fillLayer.color) {
-                                                console.log("Fill layer:", fillLayer); // Debugging
                                                 const [r, g, b, a] = fillLayer.color; // Extract RGBA values
-                                                console.log("Fill color1:", fillLayer.color);
                                                 const rgbaFillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
-                                                console.log("Fill color2:", rgbaFillColor);
                                                 const strokeLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidStroke');
                                                 const [r2, g2, b2, a2] = strokeLayer.color; // Extract RGBA values
+                                                console.log("Stroke layer:", strokeLayer); // Debugging
                                                 const rgbaOutlineColor = `rgba(${r2}, ${g2}, ${b2}, ${a2 / 255})`; // Adjust alpha to 0-1 scale if necessary
                                                 const outlineWidth = strokeLayer.width; // Assuming `width` is directly on the stroke layer
 
@@ -223,17 +210,10 @@ export const filterPointsWithinPolygon = async (
                     graphics: intersectedFeatures
                 });
 
-                console.log("Intersected features:", intersectedFeatures.length);
                 // After adding the intersected features to the map
                 mapViewRef.current.map.add(graphicsLayer);
 
-                console.log("Intersected features added to the map and legend displayed.");
-
-
-                console.log("Intersected features added to the map.");
-
                 mapViewRef.current.map.layers.remove(featureLayer);
-                console.log("Original feature layer has been removed from the map.");
 
             } else {
                 console.log("No features returned from query.");
@@ -243,7 +223,6 @@ export const filterPointsWithinPolygon = async (
         }
 
     } else if (geometryType === "point") {
-        console.log("Filtering points within the polygon geometry.");
         currentLayerView.filter = {
             geometry: record.geometry,
             spatialRelationship: "intersects"
@@ -264,15 +243,12 @@ export const getPointsInsideFeature = async (
     }
 
     try {
-        console.log("Querying features for dataset ID:", datasetId);
-        console.log("Current layer view:", currentLayerView);
 
         const query = currentLayerView.layer.createQuery();
         query.geometry = currentLayerView.filter.geometry; // Make sure this is the correct way to access geometry
         query.spatialRelationship = "intersects";
 
         const result = await currentLayerView.layer.queryFeatures(query);
-        console.log(`Points inside feature count for dataset ${datasetId}:`, result.features.length);
         return result.features.length;
     } catch (error) {
         console.error(`Error querying features for dataset ID: ${datasetId}`, error);
