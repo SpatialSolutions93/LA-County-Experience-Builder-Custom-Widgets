@@ -161,11 +161,18 @@ export const filterPointsWithinPolygon = async (
                                         const legendDataForCurrentDataset = featureLayerRenderer.uniqueValueInfos.map(info => {
                                             symbol = matchingInfo.symbol.clone();
 
+                                            console.log("Symbol:", symbol); // Debugging
+
+                                            console.log("Symbol data:", symbol.data.symbol.symbolLayers); // Debugging
+
 
                                             const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
                                             if (fillLayer && fillLayer.color) {
+                                                console.log("Fill layer:", fillLayer); // Debugging
                                                 const [r, g, b, a] = fillLayer.color; // Extract RGBA values
+                                                console.log("Fill color1:", fillLayer.color);
                                                 const rgbaFillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
+                                                console.log("Fill color2:", rgbaFillColor);
                                                 const strokeLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidStroke');
                                                 const [r2, g2, b2, a2] = strokeLayer.color; // Extract RGBA values
                                                 const rgbaOutlineColor = `rgba(${r2}, ${g2}, ${b2}, ${a2 / 255})`; // Adjust alpha to 0-1 scale if necessary

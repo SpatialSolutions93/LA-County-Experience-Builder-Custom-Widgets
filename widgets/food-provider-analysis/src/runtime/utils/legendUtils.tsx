@@ -12,19 +12,32 @@ export function generateLegendItems(legendData: any[]): any[] {
 
         console.log('item', item);
         // Determine the fill color
-        const fillColor = item.color ? item.color : "rgba(0, 0, 0, 0)";
+        let fillColor = item.color ? item.color : "rgba(0, 0, 0, 0)";
+
+        console.log('fillColor', fillColor);
 
         // Extract RGBA values for fill color
-        const fillRGBA = fillColor.match(/\d+/g).map(Number);
+        let fillRGBA = fillColor.match(/\d+/g).map(Number);
+        // Check if alpha value is 0 and adjust RGB to white if so
+        if (fillRGBA[3] === 0) {
+            fillRGBA = [255, 255, 255]; // Set to white
+        }
         const [r2, g2, b2] = fillRGBA;
         const fillHexColor = rgbaToHex(r2, g2, b2);
 
         // Determine the outline color and width
-        const outlineColor = item.outlineColor || 'rgba(0, 0, 0, 0)'; // Default to fully transparent if no color provided
+        let outlineColor = item.outlineColor || 'rgba(0, 0, 0, 0)'; // Default to fully transparent if no color provided
+
+        console.log('outlineColor', outlineColor);
+
         const outlineWidth = item.outlineWidth || 0; // Default to 0 if no width provided
 
         // Extract RGBA values for outline color
-        const outlineRGBA = outlineColor.match(/\d+/g).map(Number);
+        let outlineRGBA = outlineColor.match(/\d+/g).map(Number);
+        // Check if alpha value is 0 and adjust RGB to white if so
+        if (outlineRGBA[3] === 0) {
+            outlineRGBA = [255, 255, 255]; // Set to white
+        }
         const [r3, g3, b3] = outlineRGBA;
         const outlineHexColor = rgbaToHex(r3, g3, b3);
 
