@@ -13,7 +13,7 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import * as Logos from './logos';
 import { generateLegendItems } from './utils/legendUtils';
-import { mapStyle, reportButtonStyle, reportFormStyle, dropdownStyle } from './utils/customStyles';
+import { customButtonStyle, customContainerStyle, mapStyle, reportButtonStyle, viewReportButtonStyle, viewReportButtonHoverStyle, reportFormStyle, dropdownStyle } from './utils/customStyles';
 import { useDatasetChangeHandler, handleDropdownChange } from './utils/formLogic'
 import { createMask, filterPointsWithinPolygon, getPointsInsideFeature } from './utils/geospatialProcessing';
 
@@ -93,6 +93,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [globalSymbol, setGlobalSymbol] = React.useState<Record<string, any>>({});
     const pointsInsideFeatureCountRef = React.useRef(null);
     const [usingCustomBoundary, setUsingCustomBoundary] = React.useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
     useEffect(() => {
         const LACountyWebMap = new WebMap({
@@ -1425,9 +1426,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
     };
 
-
-
-
     const dataRender = (ds: DataSource) => {
         if (!ds) return null;
 
@@ -1437,6 +1435,16 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
         return (
             <>
+                {usingCustomBoundary && (
+                    <div style={customContainerStyle}>
+                        <div style={customButtonStyle} onClick={() => setUsingCustomBoundary(false)}>
+                            <b>Cancel</b>
+                        </div>
+                        <div id="Custom-Test" style={customButtonStyle} onClick={() => setUsingCustomBoundary(false)}>
+                            <b>Confirm Boundary</b>
+                        </div>
+                    </div>
+                )}
                 <div style={reportButtonStyle}>
                     <button
                         className="esri-widget--button border-0 select-tool-btn d-flex align-items-center justify-content-center"
@@ -1457,127 +1465,137 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
                 <div style={mapStyle} ref={mapViewRef} id='reportMapView'>
                 </div>
-                <div className="record-list" id="reportForm" style={reportFormStyle}>
+                {!usingCustomBoundary && (
+                    <div className="record-list" id="reportForm" style={reportFormStyle}>
 
-                    <button
-                        className="close-report-button"
-                        style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 3000 }}
-                        onClick={handleCloseReport}
-                    >
-                        ×
-                    </button>
+                        <button
+                            className="close-report-button"
+                            style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 3000 }}
+                            onClick={handleCloseReport}
+                        >
+                            ×
+                        </button>
 
-                    <label style={{ display: 'block', marginBottom: '10px', pointerEvents: 'auto' }}>Please select your boundary type:</label>
-                    <select
-                        value={boundaryType}
-                        onChange={onBoundaryTypeChange}
-                        style={dropdownStyle}
-                    >
-                        <option value="">Select a boundary type</option>
-                        <option value="Custom">I want to use a custom boundary</option>
-                        <option value="City">City</option>
-                        <option value="Countywide Statistical Area (CSA)">Countywide Statistical Area (CSA)</option>
-                        <option value="Census Tract">Census Tract</option>
-                        <option value="LA City Council Districts">LA City Council Districts</option>
-                        <option value="Neighborhood">Neighborhood</option>
-                        <option value="Service Planning Area (SPA)">Service Planning Area (SPA)</option>
-                        <option value="Supervisor District">Supervisor District</option>
-                    </select>
+                        <label style={{ display: 'block', marginBottom: '10px', pointerEvents: 'auto' }}>Please select your boundary type:</label>
+                        <select
+                            value={boundaryType}
+                            onChange={onBoundaryTypeChange}
+                            style={dropdownStyle}
+                        >
+                            <option value="">Select a boundary type</option>
+                            <option value="Custom">I want to use a custom boundary</option>
+                            <option value="City">City</option>
+                            <option value="Countywide Statistical Area (CSA)">Countywide Statistical Area (CSA)</option>
+                            <option value="Census Tract">Census Tract</option>
+                            <option value="LA City Council Districts">LA City Council Districts</option>
+                            <option value="Neighborhood">Neighborhood</option>
+                            <option value="Service Planning Area (SPA)">Service Planning Area (SPA)</option>
+                            <option value="Supervisor District">Supervisor District</option>
+                        </select>
 
-                    {!usingCustomBoundary && (
-                        <>
-                            <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>Please choose your boundary:</label>
-                            <select
-                                value={selectedRecordIndex}
-                                onChange={(e) => handleDropdownChange(
-                                    e,
-                                    boundaryType,
-                                    {
-                                        neighborhoodList,
-                                        cityList,
-                                        censusTractList,
-                                        cityCouncilDistrictsList,
-                                        servicePlanningAreaList,
-                                        supervisorDistrictList,
-                                        CSAList,
-                                    },
-                                    setSelectedRecordIndex,
-                                    setSelectedRecord
-                                )}
-                                style={dropdownStyle}
+                        {!usingCustomBoundary && (
+                            <>
+                                <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>Please choose your boundary:</label>
+                                <select
+                                    value={selectedRecordIndex}
+                                    onChange={(e) => handleDropdownChange(
+                                        e,
+                                        boundaryType,
+                                        {
+                                            neighborhoodList,
+                                            cityList,
+                                            censusTractList,
+                                            cityCouncilDistrictsList,
+                                            servicePlanningAreaList,
+                                            supervisorDistrictList,
+                                            CSAList,
+                                        },
+                                        setSelectedRecordIndex,
+                                        setSelectedRecord
+                                    )}
+                                    style={dropdownStyle}
+                                >
+                                    <option value="" disabled selected>
+                                        {isFetchingData ? `Loading${'.'.repeat(loadingDots)}` : "Select a record"}
+                                    </option>
+
+                                    {boundaryType === "Neighborhood" && neighborhoodList.map((record, i) => (
+                                        <option key={i} value={i}>
+                                            {record.attributes['name'] || "Unnamed"}
+                                        </option>
+                                    ))}
+
+                                    {boundaryType === "City" && cityList.map((record, i) => (
+                                        <option key={i} value={i}>
+                                            {record.attributes['CITY_NAME'] || "Unnamed"}
+                                        </option>
+                                    ))}
+
+                                    {boundaryType === "Countywide Statistical Area (CSA)" && CSAList.map((record, i) => (
+                                        <option key={i} value={i}>
+                                            {record.attributes['LABEL'] || "Unnamed"}
+                                        </option>
+                                    ))}
+
+                                    {boundaryType === "Census Tract" && censusTractList.map((record, i) => (
+                                        <option key={i} value={i}>
+                                            {record.attributes['CT20'] || "Unnamed"}
+                                        </option>
+                                    ))}
+
+                                    {boundaryType === "LA City Council Districts" && cityCouncilDistrictsList.map((record, i) => (
+                                        <option key={i} value={i}>
+                                            {record.attributes['NAME'] || "Unnamed"}
+                                        </option>
+                                    ))}
+
+                                    {boundaryType === "Service Planning Area (SPA)" && servicePlanningAreaList.map((record, i) => (
+                                        <option key={i} value={i}>
+                                            {record.attributes['SPA_NAME'] || "Unnamed"}
+                                        </option>
+                                    ))}
+
+                                    {boundaryType === "Supervisor District" && supervisorDistrictList.map((record, i) => (
+                                        <option key={i} value={i}>
+                                            {record.attributes['LABEL'] || "Unnamed"}
+                                        </option>
+                                    ))}
+                                </select>
+                            </>
+                        )}
+
+
+                        <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>
+                            Please choose your datasets:
+                        </label>
+
+                        <div style={{ ...dropdownStyle, overflowY: 'auto', maxHeight: '150px', border: '1px solid #ccc', borderRadius: '4px', pointerEvents: 'auto' }}>
+                            {datasets.map(dataset => (
+                                <div key={dataset.id} style={{ padding: '8px', display: 'flex', alignItems: 'center', pointerEvents: 'auto' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedDatasets.includes(dataset.id)}
+                                        onChange={() => handleDatasetChange(dataset.id)}
+                                        style={{ marginRight: '8px', pointerEvents: 'auto' }}
+                                    />
+                                    {dataset.name}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', pointerEvents: 'auto' }}>
+                            <button
+                                style={isHovered ? { ...viewReportButtonStyle, ...viewReportButtonHoverStyle } : viewReportButtonStyle}
+                                onMouseEnter={() => setIsHovered(true)}
+                                onMouseLeave={() => setIsHovered(false)}
+                                onClick={handleReportClick} // Ensure you've defined handleReportClick
                             >
-                                <option value="" disabled selected>
-                                    {isFetchingData ? `Loading${'.'.repeat(loadingDots)}` : "Select a record"}
-                                </option>
-
-                                {boundaryType === "Neighborhood" && neighborhoodList.map((record, i) => (
-                                    <option key={i} value={i}>
-                                        {record.attributes['name'] || "Unnamed"}
-                                    </option>
-                                ))}
-
-                                {boundaryType === "City" && cityList.map((record, i) => (
-                                    <option key={i} value={i}>
-                                        {record.attributes['CITY_NAME'] || "Unnamed"}
-                                    </option>
-                                ))}
-
-                                {boundaryType === "Countywide Statistical Area (CSA)" && CSAList.map((record, i) => (
-                                    <option key={i} value={i}>
-                                        {record.attributes['LABEL'] || "Unnamed"}
-                                    </option>
-                                ))}
-
-                                {boundaryType === "Census Tract" && censusTractList.map((record, i) => (
-                                    <option key={i} value={i}>
-                                        {record.attributes['CT20'] || "Unnamed"}
-                                    </option>
-                                ))}
-
-                                {boundaryType === "LA City Council Districts" && cityCouncilDistrictsList.map((record, i) => (
-                                    <option key={i} value={i}>
-                                        {record.attributes['NAME'] || "Unnamed"}
-                                    </option>
-                                ))}
-
-                                {boundaryType === "Service Planning Area (SPA)" && servicePlanningAreaList.map((record, i) => (
-                                    <option key={i} value={i}>
-                                        {record.attributes['SPA_NAME'] || "Unnamed"}
-                                    </option>
-                                ))}
-
-                                {boundaryType === "Supervisor District" && supervisorDistrictList.map((record, i) => (
-                                    <option key={i} value={i}>
-                                        {record.attributes['LABEL'] || "Unnamed"}
-                                    </option>
-                                ))}
-                            </select>
-                        </>
-                    )}
-
-
-                    <label style={{ display: 'block', marginTop: '20px', marginBottom: '10px' }}>
-                        Please choose your datasets:
-                    </label>
-
-                    <div style={{ ...dropdownStyle, overflowY: 'auto', maxHeight: '150px', border: '1px solid #ccc', borderRadius: '4px', pointerEvents: 'auto' }}>
-                        {datasets.map(dataset => (
-                            <div key={dataset.id} style={{ padding: '8px', display: 'flex', alignItems: 'center', pointerEvents: 'auto' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={selectedDatasets.includes(dataset.id)}
-                                    onChange={() => handleDatasetChange(dataset.id)}
-                                    style={{ marginRight: '8px', pointerEvents: 'auto' }}
-                                />
-                                {dataset.name}
-                            </div>
-                        ))}
+                                View Report
+                            </button>
+                        </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', pointerEvents: 'auto' }}>
-                        <button onClick={handleReportClick}>View Report</button>
-                    </div>
-                </div>
+                )}
 
                 {showPDFPane && (
                     <div className="pdf-pane" style={{
