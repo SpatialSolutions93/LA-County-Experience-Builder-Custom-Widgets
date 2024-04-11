@@ -565,8 +565,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             height: mapView.height
         };
 
-        console.log('Map view:', mapView.width, mapView.height);
-
         const screenshot = await mapView.takeScreenshot({ format: 'png', area: screenshotArea, width: mapView.width * 10, height: mapView.height * 10 });
 
         return screenshot.dataUrl;

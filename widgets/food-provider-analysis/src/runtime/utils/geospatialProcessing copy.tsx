@@ -4,11 +4,10 @@ import type { SetStateAction, Dispatch } from 'react';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Polygon from "@arcgis/core/geometry/Polygon";
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
-import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
 import type { Geometry } from "@arcgis/core/geometry";
+import { set } from 'seamless-immutable';
 
 // Define the createMask function which creates and returns a mask Graphic
 export const createMask = async (mapView, geometry) => {
@@ -54,16 +53,16 @@ export const createMask = async (mapView, geometry) => {
 
 // Define the type for your setGlobalLegendData function if needed
 type SetGlobalLegendDataType = Dispatch<SetStateAction<Record<string, any>>>;
+type setGlobalSymbolType = Dispatch<SetStateAction<Record<string, any>>>;
 
 export const filterPointsWithinPolygon = async (
     record,
     datasetId,
     layerViews,
     mapViewRef,
-    setGlobalLegendData: SetGlobalLegendDataType // This is your callback function
+    setGlobalLegendData: SetGlobalLegendDataType, // This is your callback function
+    setGlobalSymbol: setGlobalSymbolType
 ): Promise<void> => {
-    // Function implementation
-    console.log("Record:", record);
     // Ensure currentLayerView is defined before proceeding
     const currentLayerView = layerViews[datasetId];
     if (!currentLayerView) {
@@ -75,18 +74,14 @@ export const filterPointsWithinPolygon = async (
     const geometryType = currentLayerView.layer.geometryType;
 
     if (geometryType === "polygon") {
-        console.log("Clipping features within the polygon geometry.");
         const featureLayer = currentLayerView.layer;
 
-        // Print the entire feature layer for debugging
-        console.log("Feature layer: ", featureLayer);
-
-        // Print the renderer object, which includes the symbology of the feature layer
-        console.log("Feature layer renderer: ", featureLayer.renderer);
+        console.log("Feature layer:", featureLayer);
 
         // Retrieve the renderer from the feature layer
         const featureLayerRenderer = featureLayer.renderer;
-        console.log(`Renderer type: ${featureLayerRenderer.type}`);
+
+        console.log("Feature layer renderer:", featureLayerRenderer);
 
         const query = featureLayer.createQuery();
         query.geometry = record.geometry;
@@ -105,7 +100,6 @@ export const filterPointsWithinPolygon = async (
         try {
             const features = await featureLayer.queryFeatures(query);
             if (features.features.length > 0) {
-                console.log("Features returned from query:", features.features.length);
 
                 const intersectedFeatures = features.features.map(feature => {
                     if (feature.geometry) {
@@ -121,6 +115,12 @@ export const filterPointsWithinPolygon = async (
                                         break;
                                     }
                                 }
+
+                                setGlobalSymbol(prevData => {
+                                    const newData = { ...prevData };
+                                    newData[datasetId] = "class-breaks";
+                                    return newData;
+                                });
 
                                 setGlobalLegendData(prevData => {
                                     const newData = { ...prevData }; // Clone the previous state to ensure immutability
@@ -155,55 +155,52 @@ export const filterPointsWithinPolygon = async (
                                 let matchingInfo = featureLayerRenderer.uniqueValueInfos.find(info => info.value == attributeValue);
 
                                 if (matchingInfo && matchingInfo.symbol) {
-                                    symbol = matchingInfo.symbol.clone();
-                                    console.log("Symbol found:", symbol);
+
+                                    setGlobalSymbol(prevData => {
+                                        const newData = { ...prevData };
+                                        newData[datasetId] = "unique-value";
+                                        return newData;
+                                    });
 
                                     setGlobalLegendData(prevData => {
                                         const newData = { ...prevData };
-                                        if (!newData[datasetId]) newData[datasetId] = [];
+                                        // Initialize an empty array to track unique outline colors
+                                        let uniqueOutlineColors = [];
 
-                                        let fillColor = "rgba(0,0,0,0)"; // Default fill color
-                                        let outlineColor = "rgba(0,0,0,0)"; // Default outline color
-                                        let outlineWidth = 0;
-
-
-                                        console.log("Symbol type:", symbol.type);
-                                        // Check if it's a CIM symbol and handle accordingly
-                                        if (symbol.type === "cim") {
-                                            console.log("CIM symbol detected:", symbol);
+                                        const legendDataForCurrentDataset = featureLayerRenderer.uniqueValueInfos.reduce((acc, info) => {
+                                            const symbol = info.symbol.clone();
                                             const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
-
-                                            console.log("Fill layer:", fillLayer);
-                                            if (fillLayer && fillLayer.color) {
-                                                const [r, g, b, a] = fillLayer.color; // Extract RGBA values
-                                                const rgbaFillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
-                                                console.log("Fill color:", rgbaFillColor);
-                                            }
-
                                             const strokeLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidStroke');
-                                            console.log("Stroke layer:", strokeLayer);
-                                            if (strokeLayer && strokeLayer.color) {
-                                                const [r, g, b, a] = strokeLayer.color; // Extract RGBA values
-                                                const rgbaOutlineColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
-                                                console.log("Outline color:", rgbaOutlineColor);
-                                                outlineWidth = strokeLayer.width; // Assuming `width` is directly on the stroke layer
-                                                console.log("Outline width:", outlineWidth);
-                                            }
-                                        }
 
-                                        // Update or add the legend item
-                                        const existingLegendItem = newData[datasetId].find(item => item.label === matchingInfo.label);
-                                        if (!existingLegendItem) {
-                                            newData[datasetId].push({
-                                                label: matchingInfo.label,
-                                                fillColor: rgbaFillColor,
-                                                outlineColor: rgbaOutlineColor,
-                                                outlineWidth: outlineWidth
-                                            });
-                                        }
+                                            if (fillLayer && fillLayer.color && strokeLayer && strokeLayer.color) {
+                                                const [r, g, b, a] = fillLayer.color; // Extract RGBA values for fill color
+                                                const rgbaFillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`; // Adjust alpha to 0-1 scale if necessary
+
+                                                const [r2, g2, b2, a2] = strokeLayer.color; // Extract RGBA values for outline color
+                                                const rgbaOutlineColor = `rgba(${r2}, ${g2}, ${b2}, ${a2 / 255})`;
+
+                                                // Check if the outline color is already in the uniqueOutlineColors array
+                                                if (!uniqueOutlineColors.includes(rgbaOutlineColor)) {
+                                                    uniqueOutlineColors.push(rgbaOutlineColor); // Add new unique color to the list
+
+                                                    // Include this item in the accumulator for the legend data
+                                                    acc.push({
+                                                        label: info.label,
+                                                        fillColor: rgbaFillColor,
+                                                        outlineColor: rgbaOutlineColor,
+                                                        outlineWidth: strokeLayer.width // Assuming `width` is directly on the stroke layer
+                                                    });
+                                                }
+                                            }
+
+                                            return acc;
+                                        }, []); // Start with an empty array accumulator
+
+                                        newData[datasetId] = legendDataForCurrentDataset;
 
                                         return newData;
                                     });
+
                                 }
                             }
 
@@ -224,17 +221,10 @@ export const filterPointsWithinPolygon = async (
                     graphics: intersectedFeatures
                 });
 
-                console.log("Intersected features:", intersectedFeatures.length);
                 // After adding the intersected features to the map
                 mapViewRef.current.map.add(graphicsLayer);
 
-                console.log("Intersected features added to the map and legend displayed.");
-
-
-                console.log("Intersected features added to the map.");
-
                 mapViewRef.current.map.layers.remove(featureLayer);
-                console.log("Original feature layer has been removed from the map.");
 
             } else {
                 console.log("No features returned from query.");
@@ -244,7 +234,6 @@ export const filterPointsWithinPolygon = async (
         }
 
     } else if (geometryType === "point") {
-        console.log("Filtering points within the polygon geometry.");
         currentLayerView.filter = {
             geometry: record.geometry,
             spatialRelationship: "intersects"
@@ -265,20 +254,15 @@ export const getPointsInsideFeature = async (
     }
 
     try {
-        console.log("Querying features for dataset ID:", datasetId);
-        console.log("Current layer view:", currentLayerView);
 
         const query = currentLayerView.layer.createQuery();
         query.geometry = currentLayerView.filter.geometry; // Make sure this is the correct way to access geometry
         query.spatialRelationship = "intersects";
 
         const result = await currentLayerView.layer.queryFeatures(query);
-        console.log(`Points inside feature count for dataset ${datasetId}:`, result.features.length);
         return result.features.length;
     } catch (error) {
         console.error(`Error querying features for dataset ID: ${datasetId}`, error);
         return 0;
     }
 };
-
-

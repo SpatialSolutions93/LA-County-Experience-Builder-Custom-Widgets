@@ -22,9 +22,7 @@ export function generateLegendItems(legendData: any[], globalSymbol: string): an
         const fillHexColor = rgbaToHex(r2, g2, b2);
 
         // Determine the outline color and width
-        let outlineColor = item.outlineColor || 'rgba(0, 0, 0, 0)'; // Default to fully transparent if no color provided
-
-        console.log("outlineColor: ", outlineColor);
+        let outlineColor = item.outlineColor || 'rgba(0, 0, 0, 0)';
 
         const outlineWidth = item.outlineWidth || 0; // Default to 0 if no width provided
 

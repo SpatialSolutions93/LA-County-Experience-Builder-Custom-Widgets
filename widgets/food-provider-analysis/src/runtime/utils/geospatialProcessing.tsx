@@ -148,6 +148,22 @@ export const filterPointsWithinPolygon = async (
 
                             } else if (featureLayerRenderer.type === "unique-value") {
                                 const attributeValue = feature.attributes[featureLayerRenderer.field];
+                                if (featureLayerRenderer.type === "unique-value") {
+                                    // Assume attributeValue holds the value for the field used by the unique-value renderer
+                                    const attributeValue = feature.attributes[featureLayerRenderer.field];
+
+                                    // Find the matching unique value info
+                                    let matchingInfo = featureLayerRenderer.uniqueValueInfos.find(info => info.value === attributeValue);
+
+                                    if (matchingInfo && matchingInfo.symbol) {
+                                        // Clone the symbol from the matching unique value info
+                                        symbol = matchingInfo.symbol.clone();
+                                    } else {
+                                        // Use a default symbol if no match is found
+                                        symbol = defaultSymbol;
+                                    }
+                                }
+
                                 let matchingInfo = featureLayerRenderer.uniqueValueInfos.find(info => info.value == attributeValue);
 
                                 if (matchingInfo && matchingInfo.symbol) {
@@ -165,6 +181,7 @@ export const filterPointsWithinPolygon = async (
 
                                         const legendDataForCurrentDataset = featureLayerRenderer.uniqueValueInfos.reduce((acc, info) => {
                                             const symbol = info.symbol.clone();
+
                                             const fillLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidFill');
                                             const strokeLayer = symbol.data.symbol.symbolLayers.find(layer => layer.type === 'CIMSolidStroke');
 
@@ -199,9 +216,15 @@ export const filterPointsWithinPolygon = async (
 
                                 }
                             }
+                            if (symbol) {
+                                console.log("Found matching symbol for feature.");
+                            }
+                            if (!symbol) {
+                                console.warn("No matching symbol found for feature. Using default symbol.");
+                                symbol = defaultSymbol;
+                            }
 
-                            // Ensure a symbol was found or fallback to a default symbol
-                            symbol = symbol || defaultSymbol;
+
 
                             // Create the graphic with the symbol
                             return new Graphic({
