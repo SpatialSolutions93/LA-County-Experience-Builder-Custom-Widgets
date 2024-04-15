@@ -18,47 +18,65 @@
   LICENSE file.
 */
 import { React, Immutable, type IMFieldSchema, type UseDataSource, AllDataSourceTypes } from 'jimu-core'
-import { type AllWidgetSettingProps } from 'jimu-for-builder'
+import { AllWidgetSettingProps } from 'jimu-for-builder';
+import { MapWidgetSelector, SettingSection, SettingRow } from 'jimu-ui/advanced/setting-components';
 import { DataSourceSelector, FieldSelector } from 'jimu-ui/advanced/data-source-selector'
-
 export default function Setting(props: AllWidgetSettingProps<unknown>) {
-  const onFieldChange = (allSelectedFields: IMFieldSchema[]) => {
+  const onFieldChange = (allSelectedFields) => {
     props.onSettingChange({
       id: props.id,
-      useDataSources: [{ ...props.useDataSources[0], ...{ fields: allSelectedFields.map(f => f.jimuName) } }]
-    })
+      useDataSources: [{ ...props.useDataSources[0], fields: allSelectedFields.map(f => f.jimuName) }]
+    });
   }
 
-  const onToggleUseDataEnabled = (useDataSourcesEnabled: boolean) => {
+  const onToggleUseDataEnabled = (useDataSourcesEnabled) => {
     props.onSettingChange({
       id: props.id,
       useDataSourcesEnabled
-    })
+    });
   }
 
-  const onDataSourceChange = (useDataSources: UseDataSource[]) => {
+  const onDataSourceChange = (useDataSources) => {
     props.onSettingChange({
       id: props.id,
-      useDataSources: useDataSources
-    })
+      useDataSources
+    });
   }
 
-  return <div className="use-feature-layer-setting p-2">
-    <DataSourceSelector
-      types={Immutable([AllDataSourceTypes.FeatureLayer])}
-      useDataSources={props.useDataSources}
-      useDataSourcesEnabled={props.useDataSourcesEnabled}
-      onToggleUseDataEnabled={onToggleUseDataEnabled}
-      onChange={onDataSourceChange}
-      widgetId={props.id}
-    />
-    {
-      props.useDataSources && props.useDataSources.length > 0 &&
-      <FieldSelector
-        useDataSources={props.useDataSources}
-        onChange={onFieldChange}
-        selectedFields={props.useDataSources[0].fields || Immutable([])}
-      />
-    }
-  </div>
+  const onMapWidgetSelected = (useMapWidgetIds) => {
+    props.onSettingChange({
+      id: props.id,
+      useMapWidgetIds
+    });
+  }
+
+  return (
+    <div className="widget-setting">
+      <SettingSection title="Data Source Settings">
+        <DataSourceSelector
+          types={Immutable([AllDataSourceTypes.FeatureLayer])}
+          useDataSources={props.useDataSources}
+          useDataSourcesEnabled={props.useDataSourcesEnabled}
+          onToggleUseDataEnabled={onToggleUseDataEnabled}
+          onChange={onDataSourceChange}
+          widgetId={props.id}
+        />
+        {props.useDataSources && props.useDataSources.length > 0 && (
+          <FieldSelector
+            useDataSources={props.useDataSources}
+            onChange={onFieldChange}
+            selectedFields={props.useDataSources[0].fields || Immutable([])}
+          />
+        )}
+      </SettingSection>
+      <SettingSection title="Map Widget Settings">
+        <SettingRow>
+          <MapWidgetSelector
+            onSelect={onMapWidgetSelected}
+            useMapWidgetIds={props.useMapWidgetIds}
+          />
+        </SettingRow>
+      </SettingSection>
+    </div>
+  );
 }

@@ -16,6 +16,9 @@ import { generateLegendItems } from './utils/legendUtils';
 import { customButtonStyle, customContainerStyle, mapStyle, reportButtonStyle, viewReportButtonStyle, viewReportButtonHoverStyle, reportFormStyle, dropdownStyle } from './utils/customStyles';
 import { useDatasetChangeHandler, handleDropdownChange } from './utils/formLogic'
 import { createMask, filterPointsWithinPolygon, getPointsInsideFeature } from './utils/geospatialProcessing';
+import { JimuMapViewComponent } from 'jimu-arcgis';
+import Sketch from "@arcgis/core/widgets/Sketch.js";
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
 
 const { useRef, useState, useEffect } = React;
 
@@ -94,6 +97,69 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const pointsInsideFeatureCountRef = React.useRef(null);
     const [usingCustomBoundary, setUsingCustomBoundary] = React.useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const [jimuMapView, setJimuMapView] = useState(null);
+    const [sketchWidget, setSketchWidget] = useState(null);
+    const [sketchLayer, setSketchLayer] = useState(null);
+
+    const handleSketchWidget = (jimuMapView) => {
+        if (!jimuMapView || !jimuMapView.view) return;
+
+        const view = jimuMapView.view;
+
+        // Clean up any existing sketch layer or widget
+        removeSketchWidget(jimuMapView);
+
+        // Create a new GraphicsLayer for the Sketch widget
+        const newSketchLayer = new GraphicsLayer();
+        view.map.add(newSketchLayer);
+        setSketchLayer(newSketchLayer);
+
+        // Create the Sketch widget
+        const newSketch = new Sketch({
+            layer: newSketchLayer,
+            view: view,
+        });
+
+        // Add the Sketch widget to the view
+        view.ui.add(newSketch, 'bottom-right');
+        setSketchWidget(newSketch);
+    };
+
+    const removeSketchWidget = (jimuMapView) => {
+        if (!jimuMapView || !jimuMapView.view || !sketchWidget || !sketchLayer) return;
+
+        const view = jimuMapView.view;
+
+        // Remove the Sketch widget from the UI
+        view.ui.remove(sketchWidget);
+        setSketchWidget(null);
+
+        // Remove the Graphics Layer from the map
+        view.map.remove(sketchLayer);
+        setSketchLayer(null);
+    };
+
+
+
+    useEffect(() => {
+        if (usingCustomBoundary && jimuMapView) {
+            handleSketchWidget(jimuMapView);
+        } else if (!usingCustomBoundary && jimuMapView) {
+            removeSketchWidget(jimuMapView);
+        }
+
+        // Cleanup function to remove the Sketch widget when the widget unmounts
+        return () => {
+            if (jimuMapView) {
+                removeSketchWidget(jimuMapView);
+            }
+        };
+    }, [usingCustomBoundary, jimuMapView]);
+
+    const onActiveViewChange = (jimuMapView) => {
+        console.log("Active view changed: ", jimuMapView);
+        setJimuMapView(jimuMapView);
+    };
 
     useEffect(() => {
         const LACountyWebMap = new WebMap({
@@ -1666,6 +1732,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             <DataSourceComponent useDataSource={props.useDataSources[0]} query={getQuery()} widgetId={props.id} queryCount>
                 {dataRender}
             </DataSourceComponent>
+            <JimuMapViewComponent
+                useMapWidgetId={props.useMapWidgetIds[0]}
+                onActiveViewChange={onActiveViewChange}
+            />
         </div>
     );
 }

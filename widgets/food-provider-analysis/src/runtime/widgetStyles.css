@@ -34,11 +34,13 @@
     pointer-events: all !important;
 }
 
-.d-flex.layout-item.is-widget.app-root-emotion-cache-ltr-zrgty[data-layoutitemid="9"][data-layoutid="layout_0"] {
+.d-flex layout-item is-widget app-root-emotion-cache-ltr-divnsd[data-layoutitemid="1"][data-layoutid="layout_125"] {
     pointer-events: none !important;
 }
 
-
+.app-root-emotion-cache-ltr-c23qzn .map-is-live-mode .is-widget {
+    pointer-events: none !important;
+}
 
 .close-report-button:hover {
     color: red;
