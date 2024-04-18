@@ -72,7 +72,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const [wicFoodRetailer, setWicFoodRetailer] = useState<FeatureLayer | null>(null);
     const [calFreshCases, setCalFreshCases] = useState<FeatureLayer | null>(null);
     const [calFreshGap, setCalFreshGap] = useState<FeatureLayer | null>(null);
-    const [groceryStoresSupermarkets, setGroceryStoresSupermarkets] = useState<FeatureLayer | null>(null);
     const [foodInsecurity, setFoodInsecurity] = useState<FeatureLayer | null>(null);
     const [obesity, setObesity] = useState<FeatureLayer | null>(null);
     const [diabetes, setDiabetes] = useState<FeatureLayer | null>(null);
@@ -168,9 +167,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             }
         });
 
+        console.log("LACountyWebMap: ", LACountyWebMap);
+
         LACountyWebMap.load().then(() => {
 
+            console.log("LACountyWebMap loaded successfully.");
+
             const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
+            console.log("foodAssistanceAndBenefits: ", foodAssistanceAndBenefits);
+            console.log("La county web map layers: ", LACountyWebMap.layers)
 
             const calFreshCases_loading = foodAssistanceAndBenefits.layers.getItemAt(5) as FeatureLayer;
             const calFreshGap_loading = foodAssistanceAndBenefits.layers.getItemAt(4) as FeatureLayer;
@@ -181,11 +186,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
             const retailFoodOutlets = LACountyWebMap.layers.getItemAt(6) as GroupLayer;
 
-            const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
+            const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
             const restaurants_loading = restaurants_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
+            const retailFoodMarkets_GroupLayer = retailFoodOutlets.layers.getItemAt(1) as GroupLayer;
             const retailFoodMarkets_loading = retailFoodMarkets_GroupLayer.layers.getItemAt(2) as FeatureLayer;
-            const groceryStoresSupermarkets_loading = retailFoodOutlets.layers.getItemAt(1) as FeatureLayer;
             const farmersMarkets_loading = retailFoodOutlets.layers.getItemAt(0) as FeatureLayer;
 
             const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(5) as GroupLayer;
@@ -342,11 +346,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
-            groceryStoresSupermarkets_loading.load().then(() => {
-                setGroceryStoresSupermarkets(groceryStoresSupermarkets_loading);
-            }).catch(error => {
-                console.error("Error loading layer: ", error);
-            });
             foodInsecurity_loading.load().then(() => {
                 setFoodInsecurity(foodInsecurity_loading);
             }).catch(error => {
@@ -464,7 +463,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         { id: 12, name: "Farmer's Markets", dataSource: farmersMarkets },
         { id: 13, name: "Food Insecurity", dataSource: foodInsecurity },
         { id: 14, name: "Food Pantries", dataSource: foodPantry },
-        { id: 15, name: "Grocery Stores/Supermarkets", dataSource: groceryStoresSupermarkets },
         { id: 16, name: "Health Insurance", dataSource: healthInsurance },
         { id: 17, name: "Healthy Places Index", dataSource: healthyPlacesIndex },
         { id: 18, name: "Heart Disease", dataSource: heartDisease },
@@ -710,10 +708,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
             if (selectedDatasets.includes(14)) {
                 webmap.add(foodPantry);
-            }
-
-            if (selectedDatasets.includes(15)) {
-                webmap.add(groceryStoresSupermarkets);
             }
 
             if (selectedDatasets.includes(16)) {
