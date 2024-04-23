@@ -105,23 +105,38 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
         const view = jimuMapView.view;
 
+        console.log("Creating Sketch widget for view: ", view);
+
         // Clean up any existing sketch layer or widget
         removeSketchWidget(jimuMapView);
 
+        console.log("Removed jimu map view: ", jimuMapView);
+
         // Create a new GraphicsLayer for the Sketch widget
         const newSketchLayer = new GraphicsLayer();
-        view.map.add(newSketchLayer);
+
         setSketchLayer(newSketchLayer);
+
+        console.log("New sketch layer: ", newSketchLayer);
+        view.map.add(sketchLayer);
+
+        console.log("View map: ", view.map);
+
+        console.log("Sketch layer: ", sketchLayer);
 
         // Create the Sketch widget
         const newSketch = new Sketch({
-            layer: newSketchLayer,
+            layer: sketchLayer,
             view: view,
         });
+
+        console.log("New sketch widget: ", newSketch);
 
         // Add the Sketch widget to the view
         view.ui.add(newSketch, 'bottom-right');
         setSketchWidget(newSketch);
+
+        console.log("Sketch widget: ", sketchWidget);
     };
 
     const removeSketchWidget = (jimuMapView) => {
@@ -173,11 +188,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
             console.log("LACountyWebMap loaded successfully.");
 
+            console.log("LA county web map: ", LACountyWebMap)
+
             const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(7) as GroupLayer;
             console.log("foodAssistanceAndBenefits: ", foodAssistanceAndBenefits);
             console.log("La county web map layers: ", LACountyWebMap.layers)
 
             const calFreshCases_loading = foodAssistanceAndBenefits.layers.getItemAt(5) as FeatureLayer;
+            console.log("calFreshCases_loading: ", calFreshCases_loading);
             const calFreshGap_loading = foodAssistanceAndBenefits.layers.getItemAt(4) as FeatureLayer;
             const calFreshFoodRetailer_loading = foodAssistanceAndBenefits.layers.getItemAt(3) as FeatureLayer;
             const calFreshRestaurant_loading = foodAssistanceAndBenefits.layers.getItemAt(2) as FeatureLayer;
@@ -337,7 +355,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             });
 
             calFreshCases_loading.load().then(() => {
+                console.log("CalFresh Cases layer loaded successfully.");
                 setCalFreshCases(calFreshCases_loading);
+                console.log("CalFresh Cases layer: ", calFreshCases);
             }).catch(error => {
                 console.error("Error loading layer: ", error);
             });
@@ -652,13 +672,18 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     let layerViews = {};
 
     const initializeMapView = async () => {
+
+        console.log("Initializing map view.");
         if (mapViewRef.current) {
+            console.log(" Map view ref: ", mapViewRef.current);
 
             if (selectedDatasets.includes(1)) {
                 webmap.add(age);
             }
 
             if (selectedDatasets.includes(2)) {
+                console.log("Adding CalFresh Cases layer to map.");
+                console.log("Web map: ", webmap);
                 webmap.add(calFreshCases);
             }
 
@@ -806,6 +831,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             for (const dataset of datasets) {
                 if (selectedDatasets.includes(dataset.id) && dataset.dataSource) {
                     const lv = await mapView.whenLayerView(dataset.dataSource);
+                    console.log("LayerView for dataset: ", dataset.name, lv);
                     layerViews[dataset.id] = lv;
                 }
             }
