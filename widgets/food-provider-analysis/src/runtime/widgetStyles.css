@@ -1,0 +1,47 @@
+@import "~@arcgis/core/assets/esri/themes/light/main.css";
+
+/* Style for the loading container */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+/* Style for the spinner animation */
+.spinner {
+    border: 8px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 8px solid blue;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+/* Keyframes for the spinning animation */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.jimu-input {
+    pointer-events: all !important;
+}
+
+.d-flex layout-item is-widget app-root-emotion-cache-ltr-divnsd[data-layoutitemid="1"][data-layoutid="layout_125"] {
+    pointer-events: none !important;
+}
+
+.app-root-emotion-cache-ltr-c23qzn .map-is-live-mode .is-widget {
+    pointer-events: none !important;
+}
+
+.close-report-button:hover {
+    color: red;
+}

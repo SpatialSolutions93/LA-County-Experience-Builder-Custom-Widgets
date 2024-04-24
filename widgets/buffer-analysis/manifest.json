@@ -1,0 +1,19 @@
+{
+    "name": "buffer-analysis",
+    "label": "Buffer Analysis",
+    "type": "widget",
+    "version": "1.12.0",
+    "exbVersion": "1.12.0",
+    "author": "Esri R&D Center Beijing",
+    "description": "A widget to show analysis graphs",
+    "copyright": "",
+    "license": "http://www.apache.org/licenses/LICENSE-2.0",
+    "properties": {},
+    "translatedLocales": [
+        "en"
+    ],
+    "defaultSize": {
+        "width": 400,
+        "height": 400
+    }
+}

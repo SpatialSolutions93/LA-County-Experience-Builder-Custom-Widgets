@@ -1,0 +1,53 @@
+@import "~@arcgis/core/assets/esri/themes/light/main.css";
+
+.esri-feature-table {
+    display: flex;
+    flex-direction: column;
+    height: 500px !important;
+    top: 28%;
+    width: 90% !important;
+    left: 5%;
+    position: absolute;
+    border: 3px solid black;
+    pointer-events: all !important;
+}
+
+.esri-feature-table__loader-container {
+    height: 40px;
+    margin: 0 8px;
+    order: 1;
+    width: 20%;
+    top: 245px;
+    left: 70px;
+    position: relative;
+    z-index: 300;
+    pointer-events: all !important;
+}
+
+.esri-icon-arrow-left {
+    cursor: pointer;
+    color: #000;
+    font-size: 20px;
+    margin-right: 10px;
+    pointer-events: all !important;
+}
+
+
+.d-flex.layout-item.is-widget.app-root-emotion-cache-ltr-zrgty[data-layoutitemid="7"][data-layoutid="layout_0"] {
+    pointer-events: none !important;
+}
+
+
+.close-button {
+    position: absolute;
+    right: 88px;
+    top: 5px;
+    cursor: pointer;
+    font-size: 20px;
+    z-index: 2100;
+}
+
+.close-button:hover {
+    color: red;
+    /* Change the color to red on hover */
+}

@@ -1,0 +1,37 @@
+@import "~@arcgis/core/assets/esri/themes/light/main.css";
+
+.esri-feature-table {
+    display: flex;
+    flex-direction: column !important;
+    height: 500px !important;
+    top: 657% !important;
+    width: 90% !important;
+    left: 4.5% !important;
+    position: absolute !important;
+    border: 2px solid black !important;
+    pointer-events: all !important;
+}
+
+.esri-feature-table__loader-container {
+    height: 40px !important;
+    margin: 0 8px !important;
+    order: 1 !important;
+    width: 20% !important;
+    top: 274px !important;
+    left: 70px !important;
+    position: relative !important;
+    z-index: 300 !important;
+    pointer-events: all !important;
+}
+
+.esri-icon-arrow-left {
+    cursor: pointer !important;
+    color: #000 !important;
+    font-size: 20px !important;
+    margin-right: 10px !important;
+    pointer-events: all !important;
+}
+
+.d-flex.layout-item.is-widget.app-root-emotion-cache-ltr-pqqjbk[data-layoutitemid="8"][data-layoutid="layout_0"] {
+    pointer-events: none !important;
+}
