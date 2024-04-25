@@ -35,6 +35,8 @@ import {
 import { JimuMapViewComponent } from "jimu-arcgis";
 import Sketch from "@arcgis/core/widgets/Sketch.js";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
+import { set } from "seamless-immutable";
+import { last } from "lodash-es";
 
 const { useRef, useState, useEffect } = React;
 
@@ -141,59 +143,56 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [jimuMapView, setJimuMapView] = useState(null);
   const [sketchWidget, setSketchWidget] = useState(null);
   const [sketchLayer, setSketchLayer] = useState(null);
+  const [lastGraphicGeometry, setLastGraphicGeometry] = useState(null); // State to hold the geometry
+  const [customBoundarySelected, setCustomBoundarySelected] = useState(false);
 
   const handleSketchWidget = (jimuMapView) => {
     if (!jimuMapView || !jimuMapView.view) return;
 
-    const view = jimuMapView.view;
-
-    console.log("Creating Sketch widget for view: ", view);
-
-    // Clean up any existing sketch layer or widget
+    // Remove any existing sketch widget
     removeSketchWidget(jimuMapView);
-
-    console.log("Removed jimu map view: ", jimuMapView);
 
     // Create a new GraphicsLayer for the Sketch widget
     const newSketchLayer = new GraphicsLayer();
+    jimuMapView.view.map.add(newSketchLayer); // Adding directly to the map object
 
-    setSketchLayer(newSketchLayer);
-
-    console.log("New sketch layer: ", newSketchLayer);
-    view.map.add(sketchLayer);
-
-    console.log("View map: ", view.map);
-
-    console.log("Sketch layer: ", sketchLayer);
-
-    // Create the Sketch widget
-    const newSketch = new Sketch({
-      layer: sketchLayer,
-      view: view,
-    });
-
-    console.log("New sketch widget: ", newSketch);
-
-    // Add the Sketch widget to the view
-    view.ui.add(newSketch, "bottom-right");
-    setSketchWidget(newSketch);
-
-    console.log("Sketch widget: ", sketchWidget);
+    // Setup the Sketch widget
+    setupSketchWidget(newSketchLayer, jimuMapView.view);
   };
 
+  const setupSketchWidget = (layer, view) => {
+    const sketch = new Sketch({
+      layer: layer,
+      view: view,
+      availableCreateTools: ["polygon", "rectangle"],
+    });
+
+    sketch.on("create", (event) => {
+      if (event.state === "complete") {
+        layer.removeAll();
+        layer.add(event.graphic);
+        setLastGraphicGeometry(event.graphic.geometry);
+        console.log("Event graphic geometry: ", event.graphic.geometry);
+      }
+    });
+
+    view.ui.add(sketch, "bottom-right");
+    setSketchWidget(sketch);
+  };
+
+  useEffect(() => {
+    console.log("Last graphic geometry (from state): ", lastGraphicGeometry);
+  }, [lastGraphicGeometry]);
+
   const removeSketchWidget = (jimuMapView) => {
-    if (!jimuMapView || !jimuMapView.view || !sketchWidget || !sketchLayer)
-      return;
+    if (!jimuMapView || !jimuMapView.view) return;
 
-    const view = jimuMapView.view;
-
-    // Remove the Sketch widget from the UI
-    view.ui.remove(sketchWidget);
-    setSketchWidget(null);
-
-    // Remove the Graphics Layer from the map
-    view.map.remove(sketchLayer);
-    setSketchLayer(null);
+    // Assuming the sketch widget is globally or otherwise stored
+    if (sketchWidget) {
+      jimuMapView.view.ui.remove(sketchWidget);
+      sketchWidget.layer && jimuMapView.view.map.remove(sketchWidget.layer);
+      setSketchWidget(null);
+    }
   };
 
   useEffect(() => {
@@ -508,13 +507,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   }, [isFetchingData]);
 
   React.useEffect(() => {
-    if (usingCustomBoundary) {
-      console.log("Custom boundary is being used.");
-      // Any additional logic you want to execute when usingCustomBoundary is true
-    }
-  }, [usingCustomBoundary]); // This effect depends on usingCustomBoundary
-
-  React.useEffect(() => {
     const sortByAttribute = (features, attribute) => {
       return features.sort((a, b) =>
         a.attributes[attribute].localeCompare(b.attributes[attribute])
@@ -601,6 +593,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
 
     // Reset the form data
+    //setCustomBoundarySelected(false);
     setUsingCustomBoundary(false);
     setBoundaryType(""); // Reset boundary type
     setSelectedRecordIndex("");
@@ -610,7 +603,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const attributeKey = ATTRIBUTE_MAP[boundaryType];
 
   const featureName =
-    selectedRecord?.attributes?.[attributeKey] || "Unknown Name";
+    selectedRecord?.attributes?.[attributeKey] || "Custom Boundary";
 
   // 1. Setup the map and layers for the selected feature
   const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
@@ -1318,11 +1311,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       },
     };
 
-    if (!selectedRecord || !selectedRecord || !selectedRecord.geometry) {
-      console.error("Invalid record or geometry. Cannot generate PDF.");
-      return;
-    }
-
     pdfMake.createPdf(docDefinition).getBlob((blob) => {
       setPdfBlob(blob);
       setShowPDFPane(true);
@@ -1363,15 +1351,24 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const mapView = mapViewRef.current;
     const record = selectedRecord;
 
-    if (!record || !record.geometry) {
+    if ((!record || !record.geometry) && !lastGraphicGeometry) {
       console.error("Invalid record or geometry. Cannot generate report.");
       setIsLoadingReport(false);
       return;
     }
 
-    // Zoom to the feature's extent
-    const featureExtent = record.geometry.extent;
-    const sr = record.geometry.spatialReference;
+    let featureExtent;
+    let sr;
+
+    if (!lastGraphicGeometry) {
+      // Zoom to the feature's extent if there is no last graphic geometry
+      featureExtent = record.geometry.extent;
+      sr = record.geometry.spatialReference;
+    } else {
+      // If last graphic geometry exists, use its extent and spatial reference
+      featureExtent = lastGraphicGeometry.extent;
+      sr = lastGraphicGeometry.spatialReference;
+    }
 
     // Ensure that the featureExtent is valid before proceeding
     if (
@@ -1402,10 +1399,19 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         },
       });
 
-      const graphic = new Graphic({
-        geometry: record.geometry,
-        symbol: fillSymbol,
-      });
+      let graphic;
+
+      if (!lastGraphicGeometry) {
+        graphic = new Graphic({
+          geometry: record.geometry,
+          symbol: fillSymbol,
+        });
+      } else {
+        graphic = new Graphic({
+          geometry: lastGraphicGeometry,
+          symbol: fillSymbol,
+        });
+      }
 
       mapView.graphics.add(graphic);
 
@@ -1435,16 +1441,36 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           });
         });
 
-        await createMask(mapViewRef.current, record.geometry);
+        console.log("Using custom boundary:", usingCustomBoundary);
+        console.log("Custom boundary selected:", customBoundarySelected);
 
-        await filterPointsWithinPolygon(
-          record,
-          datasetId,
-          layerViews, // This should be defined in your component state or context
-          mapViewRef, // This should be your useRef hook reference
-          setGlobalLegendData, // Passing the setState function directly
-          setGlobalSymbol
-        );
+        console.log("lastGraphicGeometry: ", lastGraphicGeometry);
+
+        if (!lastGraphicGeometry) {
+          await createMask(mapViewRef.current, record.geometry);
+        } else {
+          await createMask(mapViewRef.current, lastGraphicGeometry);
+        }
+
+        if (!lastGraphicGeometry) {
+          await filterPointsWithinPolygon(
+            datasetId,
+            layerViews, // This should be defined in your component state or context
+            mapViewRef, // This should be your useRef hook reference
+            record.geometry,
+            setGlobalLegendData, // Passing the setState function directly
+            setGlobalSymbol
+          );
+        } else {
+          await filterPointsWithinPolygon(
+            datasetId,
+            layerViews, // This should be defined in your component state or context
+            mapViewRef, // This should be your useRef hook reference
+            lastGraphicGeometry,
+            setGlobalLegendData, // Passing the setState function directly
+            setGlobalSymbol
+          );
+        }
 
         const count = await getPointsInsideFeature(datasetId, layerViews);
         pointsInsideFeatureCountRef.current = count;
@@ -1517,6 +1543,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
   };
 
+  useEffect(() => {
+    console.log("Custom boundary selected: ", customBoundarySelected);
+    const reportForm = document.getElementById("reportForm");
+    console.log("Report form: ", reportForm);
+    if (reportForm) {
+      reportForm.style.visibility = "visible";
+    }
+  }, [customBoundarySelected]); // Only re-run the effect if customBoundarySelected changes
+
   const dataRender = (ds: DataSource) => {
     if (!ds) return null;
 
@@ -1542,7 +1577,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             <div
               id="Custom-Test"
               style={customButtonStyle}
-              onClick={() => setUsingCustomBoundary(false)}
+              onClick={() => {
+                setUsingCustomBoundary(false);
+                setCustomBoundarySelected(true);
+              }}
             >
               <b>Confirm Boundary</b>
             </div>
@@ -1570,7 +1608,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         </div>
 
         <div style={mapStyle} ref={mapViewRef} id="reportMapView"></div>
-        {!usingCustomBoundary && (
+        {(!usingCustomBoundary || customBoundarySelected) && (
           <div className="record-list" id="reportForm" style={reportFormStyle}>
             <button
               className="close-report-button"
