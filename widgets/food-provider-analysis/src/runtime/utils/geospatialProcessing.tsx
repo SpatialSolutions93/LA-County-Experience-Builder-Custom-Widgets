@@ -64,7 +64,6 @@ export const filterPointsWithinPolygon = async (
   setGlobalSymbol: setGlobalSymbolType
 ): Promise<void> => {
   // Print layerviews
-  console.log("layerViews", layerViews);
   const currentLayerView = layerViews[datasetId];
   if (!currentLayerView) {
     console.error(`No layer view found for dataset ID: ${datasetId}`);

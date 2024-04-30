@@ -51,6 +51,7 @@ pdfMake.vfs = pdfFonts.pdfMake.vfs;
 export default function Widget(props: AllWidgetProps<unknown>) {
   const dsRef = useRef(null);
   const mapViewRef = useRef(null);
+  const mapViewRef2 = useRef(null);
   const [pdfBlob, setPdfBlob] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [neighborhoodList, setNeighborhoodList] = useState([]);
@@ -172,17 +173,12 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         layer.removeAll();
         layer.add(event.graphic);
         setLastGraphicGeometry(event.graphic.geometry);
-        console.log("Event graphic geometry: ", event.graphic.geometry);
       }
     });
 
     view.ui.add(sketch, "bottom-right");
     setSketchWidget(sketch);
   };
-
-  useEffect(() => {
-    console.log("Last graphic geometry (from state): ", lastGraphicGeometry);
-  }, [lastGraphicGeometry]);
 
   const removeSketchWidget = (jimuMapView) => {
     if (!jimuMapView || !jimuMapView.view) return;
@@ -211,7 +207,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   }, [usingCustomBoundary, jimuMapView]);
 
   const onActiveViewChange = (jimuMapView) => {
-    console.log("Active view changed: ", jimuMapView);
     setJimuMapView(jimuMapView);
   };
 
@@ -594,10 +589,12 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     // Reset the form data
     //setCustomBoundarySelected(false);
+    setCustomBoundarySelected(false);
     setUsingCustomBoundary(false);
     setBoundaryType(""); // Reset boundary type
     setSelectedRecordIndex("");
     setSelectedDatasets([]); // Reset selected datasets
+    setLastGraphicGeometry(null); // Reset the last graphic geometry
   };
 
   const attributeKey = ATTRIBUTE_MAP[boundaryType];
@@ -609,7 +606,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
 
   const handleScreenshot = async () => {
-    const mapView = mapViewRef.current;
+    const mapView = mapViewRef2.current;
     const screenshotArea = {
       x: 0,
       y: 0,
@@ -630,17 +627,12 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   let layerViews = {};
 
   const initializeMapView = async () => {
-    console.log("Initializing map view.");
     if (mapViewRef.current) {
-      console.log(" Map view ref: ", mapViewRef.current);
-
       if (selectedDatasets.includes(1)) {
         webmap.add(age);
       }
 
       if (selectedDatasets.includes(2)) {
-        console.log("Adding CalFresh Cases layer to map.");
-        console.log("Web map: ", webmap);
         webmap.add(calFreshCases);
       }
 
@@ -749,9 +741,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       }
 
       if (selectedDatasets.includes(30)) {
-        console.log("Adding Redlining layer to map.");
         webmap.add(redlining);
-        console.log("Web map after adding redlining layer: ", webmap);
       }
 
       if (selectedDatasets.includes(31)) {
@@ -778,19 +768,25 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         webmap.add(wicFoodRetailer);
       }
 
+      console.log("mapViewRef.current: ", mapViewRef.current);
+      console.log("webmap: ", webmap);
+
+      mapViewRef2.current = mapViewRef.current;
+
       const mapView = new MapView({
-        container: mapViewRef.current,
+        container: mapViewRef2.current,
         map: webmap,
       });
 
-      mapViewRef.current = mapView;
+      console.log("Map view: ", mapView);
+
+      mapViewRef2.current = mapView;
 
       await mapView.when();
 
       for (const dataset of datasets) {
         if (selectedDatasets.includes(dataset.id) && dataset.dataSource) {
           const lv = await mapView.whenLayerView(dataset.dataSource);
-          console.log("LayerView for dataset: ", dataset.name, lv);
           layerViews[dataset.id] = lv;
         }
       }
@@ -901,6 +897,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const overlap = 10; // Set the thickness of your outline
 
     function generateSlideForDataset(datasetId, datasetName) {
+      console.log("datasetId: ", datasetId);
       const coloredLine = {
         canvas: [
           {
@@ -915,8 +912,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         ],
         margin: [0, 0, 0, 220],
       };
-
-      console.log("Dataset name:", datasetName);
 
       let textGroup;
 
@@ -1180,6 +1175,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       dynamicSlides.push(generateSlideForDataset(datasetId, datasetName));
     }
 
+    console.log("dynamicSlides: ", dynamicSlides);
+
     const docDefinition = {
       // Background definition for the red rectangle and black outline
       background: function (currentPage, pageSize) {
@@ -1311,7 +1308,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       },
     };
 
+    console.log("docDefinition: ", docDefinition);
+
     pdfMake.createPdf(docDefinition).getBlob((blob) => {
+      console.log("Blob: ", blob);
       setPdfBlob(blob);
       setShowPDFPane(true);
     });
@@ -1319,13 +1319,19 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
   React.useEffect(() => {
     if (imageDimensions) {
+      console.log("globalLegendData: ", globalLegendData);
       generateTestPDF(globalLegendData).then(() => {
         progressCtrRef.current += 1;
+        console.log("Progress counter: ", progressCtrRef.current);
         if (progressCtrRef.current === slideCtrRef.current) {
+          console.log("All screenshots have been processed.");
           setPdfGenerationComplete(true);
           setIsLoadingReport(false);
 
           handleCloseReport();
+
+          // Reset the progress counter
+          progressCtrRef.current = 0;
         }
       });
     }
@@ -1348,7 +1354,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     // Initialize the map view
     await initializeMapView();
 
-    const mapView = mapViewRef.current;
+    const mapView = mapViewRef2.current;
     const record = selectedRecord;
 
     if ((!record || !record.geometry) && !lastGraphicGeometry) {
@@ -1441,22 +1447,17 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           });
         });
 
-        console.log("Using custom boundary:", usingCustomBoundary);
-        console.log("Custom boundary selected:", customBoundarySelected);
-
-        console.log("lastGraphicGeometry: ", lastGraphicGeometry);
-
         if (!lastGraphicGeometry) {
-          await createMask(mapViewRef.current, record.geometry);
+          await createMask(mapViewRef2.current, record.geometry);
         } else {
-          await createMask(mapViewRef.current, lastGraphicGeometry);
+          await createMask(mapViewRef2.current, lastGraphicGeometry);
         }
 
         if (!lastGraphicGeometry) {
           await filterPointsWithinPolygon(
             datasetId,
             layerViews, // This should be defined in your component state or context
-            mapViewRef, // This should be your useRef hook reference
+            mapViewRef2, // This should be your useRef hook reference
             record.geometry,
             setGlobalLegendData, // Passing the setState function directly
             setGlobalSymbol
@@ -1465,7 +1466,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           await filterPointsWithinPolygon(
             datasetId,
             layerViews, // This should be defined in your component state or context
-            mapViewRef, // This should be your useRef hook reference
+            mapViewRef2, // This should be your useRef hook reference
             lastGraphicGeometry,
             setGlobalLegendData, // Passing the setState function directly
             setGlobalSymbol
@@ -1491,8 +1492,12 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
       }
 
+      console.log("Screenshots: ", screenshots);
+
       // Update the state with the collected screenshots
       setMapScreenshotDataArray(screenshots);
+
+      setCustomBoundarySelected(false);
     } else {
       console.error("Invalid feature extent. Cannot generate report.");
       setIsLoadingReport(false);
@@ -1511,18 +1516,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
   }, [pdfBlob]);
 
-  const handleCustomBoundarySelect = () => {
-    console.log("Custom boundary selected");
-    // Additional logic for handling custom boundary selection
-  };
-
   const onBoundaryTypeChange = (event) => {
     const selectedType = event.target.value;
     setBoundaryType(selectedType);
 
     // Check if the selected type is 'Custom'
     if (selectedType === "Custom") {
-      handleCustomBoundarySelect();
+      console.log("Custom boundary selected.");
     } else {
       // Proceed with default handling if not 'Custom'
       handleDropdownChange(
@@ -1544,9 +1544,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   };
 
   useEffect(() => {
-    console.log("Custom boundary selected: ", customBoundarySelected);
     const reportForm = document.getElementById("reportForm");
-    console.log("Report form: ", reportForm);
     if (reportForm) {
       reportForm.style.visibility = "visible";
     }
@@ -1570,7 +1568,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           <div style={customContainerStyle}>
             <div
               style={customButtonStyle}
-              onClick={() => setUsingCustomBoundary(false)}
+              onClick={() => {
+                setUsingCustomBoundary(false);
+                setBoundaryType(""); // Reset boundary type
+                setSelectedRecordIndex("");
+                setSelectedDatasets([]); // Reset selected datasets
+                setLastGraphicGeometry(null); // Reset the last graphic geometry
+              }}
             >
               <b>Cancel</b>
             </div>
@@ -1658,7 +1662,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
               <option value="Supervisor District">Supervisor District</option>
             </select>
 
-            {!usingCustomBoundary && (
+            {!customBoundarySelected && (
               <>
                 <label
                   style={{
@@ -1900,6 +1904,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     return () => {
       if (mapViewRef.current) {
         mapViewRef.current.destroy();
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (mapViewRef2.current) {
+        mapViewRef2.current.destroy();
       }
     };
   }, []);
