@@ -20,7 +20,10 @@ import {
   reportButtonStyle,
   viewReportButtonStyle,
   viewReportButtonHoverStyle,
+  viewUseCaseButtonStyle,
+  viewUseCaseButtonHoverStyle,
   reportFormStyle,
+  useCaseFormStyle,
   dropdownStyle,
 } from "./utils/customStyles";
 import {
@@ -68,6 +71,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [imageDimensions, setImageDimensions] = useState(null);
   const [pdfGenerationComplete, setPdfGenerationComplete] = useState(false);
   const [boundaryType, setBoundaryType] = useState<string | null>(null);
+  const [useCaseType, setUseCaseType] = useState<string | null>(null);
   const [selectedDatasets, setSelectedDatasets] = useState([]);
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [loadingDots, setLoadingDots] = useState(1);
@@ -141,6 +145,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const pointsInsideFeatureCountRef = React.useRef(null);
   const [usingCustomBoundary, setUsingCustomBoundary] = React.useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isHoveredUseCase, setIsHoveredUseCase] = useState(false);
   const [jimuMapView, setJimuMapView] = useState(null);
   const [sketchWidget, setSketchWidget] = useState(null);
   const [sketchLayer, setSketchLayer] = useState(null);
@@ -595,6 +600,25 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     setSelectedRecordIndex("");
     setSelectedDatasets([]); // Reset selected datasets
     setLastGraphicGeometry(null); // Reset the last graphic geometry
+    setUseCaseType(""); // Reset use case type
+  };
+
+  const handleCloseUseCase = () => {
+    // Hide the report form
+    const reportForm = document.getElementById("useCaseForm");
+    if (reportForm) {
+      reportForm.style.visibility = "hidden";
+    }
+
+    // Reset the form data
+    //setCustomBoundarySelected(false);
+    setCustomBoundarySelected(false);
+    setUsingCustomBoundary(false);
+    setBoundaryType(""); // Reset boundary type
+    setSelectedRecordIndex("");
+    setSelectedDatasets([]); // Reset selected datasets
+    setLastGraphicGeometry(null); // Reset the last graphic geometry
+    setUseCaseType(""); // Reset use case type
   };
 
   const attributeKey = ATTRIBUTE_MAP[boundaryType];
@@ -1543,6 +1567,10 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
   };
 
+  const onUseCaseTypeChange = (event) => {
+    setUseCaseType(event.target.value);
+  };
+
   useEffect(() => {
     const reportForm = document.getElementById("reportForm");
     if (reportForm) {
@@ -1574,6 +1602,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 setSelectedRecordIndex("");
                 setSelectedDatasets([]); // Reset selected datasets
                 setLastGraphicGeometry(null); // Reset the last graphic geometry
+                setUseCaseType(""); // Reset use case type
               }}
             >
               <b>Cancel</b>
@@ -1594,15 +1623,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           <button
             className="esri-widget--button border-0 select-tool-btn d-flex align-items-center justify-content-center"
             onClick={() => {
-              const reportForm = document.getElementById("reportForm");
-              if (reportForm) {
+              const useCaseForm = document.getElementById("useCaseForm");
+              if (useCaseForm) {
                 if (
-                  reportForm.style.visibility === "hidden" ||
-                  reportForm.style.visibility === ""
+                  useCaseForm.style.visibility === "hidden" ||
+                  useCaseForm.style.visibility === ""
                 ) {
-                  reportForm.style.visibility = "visible";
+                  useCaseForm.style.visibility = "visible";
                 } else {
-                  reportForm.style.visibility = "hidden";
+                  useCaseForm.style.visibility = "hidden";
                 }
               }
             }}
@@ -1612,6 +1641,91 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         </div>
 
         <div style={mapStyle} ref={mapViewRef} id="reportMapView"></div>
+
+        {(!usingCustomBoundary || customBoundarySelected) && (
+          <div
+            className="record-list"
+            id="useCaseForm"
+            style={useCaseFormStyle}
+          >
+            <button
+              className="close-report-button"
+              style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                background: "transparent",
+                border: "none",
+                fontSize: "20px",
+                cursor: "pointer",
+                zIndex: 3000,
+              }}
+              onClick={handleCloseUseCase}
+            >
+              ×
+            </button>
+
+            <label
+              style={{
+                display: "block",
+                marginBottom: "10px",
+                pointerEvents: "auto",
+              }}
+            >
+              Please select your use case:
+            </label>
+            <select
+              value={useCaseType}
+              style={dropdownStyle}
+              onChange={onUseCaseTypeChange}
+            >
+              <option value="">Select a use case</option>
+              <option value="Food Availability">Food Availability</option>
+              <option value="Health">Health</option>
+              <option value="Economics">Economics</option>
+            </select>
+
+            <button
+              style={
+                isHoveredUseCase
+                  ? {
+                      ...viewUseCaseButtonStyle,
+                      ...viewUseCaseButtonHoverStyle,
+                    }
+                  : viewUseCaseButtonStyle
+              }
+              onMouseEnter={() => setIsHoveredUseCase(true)}
+              onMouseLeave={() => setIsHoveredUseCase(false)}
+              onClick={() => {
+                const reportForm = document.getElementById("reportForm");
+                const useCaseForm = document.getElementById("useCaseForm");
+                if (reportForm) {
+                  if (
+                    reportForm.style.visibility === "hidden" ||
+                    reportForm.style.visibility === ""
+                  ) {
+                    reportForm.style.visibility = "visible";
+                  } else {
+                    reportForm.style.visibility = "hidden";
+                  }
+                }
+
+                if (useCaseForm) {
+                  if (
+                    useCaseForm.style.visibility === "hidden" ||
+                    useCaseForm.style.visibility === ""
+                  ) {
+                    useCaseForm.style.visibility = "visible";
+                  } else {
+                    useCaseForm.style.visibility = "hidden";
+                  }
+                }
+              }}
+            >
+              Select Data
+            </button>
+          </div>
+        )}
         {(!usingCustomBoundary || customBoundarySelected) && (
           <div className="record-list" id="reportForm" style={reportFormStyle}>
             <button
@@ -1812,7 +1926,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 }
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                onClick={handleReportClick} // Ensure you've defined handleReportClick
+                onClick={handleReportClick}
               >
                 View Report
               </button>

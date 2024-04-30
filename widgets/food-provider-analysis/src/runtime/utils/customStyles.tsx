@@ -16,7 +16,7 @@ export const reportButtonStyle: CSSProperties = {
   position: "absolute",
   top: "131px",
   left: "15px",
-  zIndex: 2000,
+  zIndex: 6000,
   boxShadow: "rgba(0, 0, 0, 0.2) 0px 1px 2px 0px",
   pointerEvents: "auto",
 };
@@ -37,7 +37,40 @@ export const viewReportButtonHoverStyle: CSSProperties = {
   border: "1px solid #009c0a",
 };
 
+export const viewUseCaseButtonStyle: CSSProperties = {
+  fontSize: "16px",
+  fontWeight: "bold",
+  transition: "background-color 0.3s ease, color 0.3s ease",
+  backgroundColor: "#f5f5f5",
+  color: "black",
+  border: "1px solid #ccc",
+  padding: "10px 20px",
+  cursor: "pointer",
+};
+
+export const viewUseCaseButtonHoverStyle: CSSProperties = {
+  backgroundColor: "lightgreen",
+  border: "1px solid #009c0a",
+};
+
 export const reportFormStyle: CSSProperties = {
+  width: "calc(100% - 300px)",
+  margin: "0 150px",
+  marginTop: "20px",
+  height: "auto",
+  overflow: "auto",
+  visibility: "hidden",
+  backgroundColor: "white",
+  border: "1px solid black",
+  padding: "20px",
+  boxSizing: "border-box",
+  pointerEvents: "auto",
+  position: "absolute",
+  zIndex: 1000,
+  bottom: "36%",
+};
+
+export const useCaseFormStyle: CSSProperties = {
   width: "calc(100% - 300px)",
   margin: "0 150px",
   marginTop: "20px",
