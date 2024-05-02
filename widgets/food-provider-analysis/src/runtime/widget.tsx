@@ -71,7 +71,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [imageDimensions, setImageDimensions] = useState(null);
   const [pdfGenerationComplete, setPdfGenerationComplete] = useState(false);
   const [boundaryType, setBoundaryType] = useState<string | null>(null);
-  const [useCaseType, setUseCaseType] = useState<string | null>(null);
+  const [useCaseType, setUseCaseType] = useState("");
+  const [labelColor, setLabelColor] = useState("black"); // Default color
+  const [labelFontWeight, setLabelFontWeight] = useState("normal");
   const [selectedDatasets, setSelectedDatasets] = useState([]);
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [loadingDots, setLoadingDots] = useState(1);
@@ -1567,8 +1569,46 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
   };
 
-  const onUseCaseTypeChange = (event) => {
-    setUseCaseType(event.target.value);
+  const onUseCaseTypeChange = (e) => {
+    const selectedType = e.target.value;
+    setUseCaseType(selectedType);
+    // Reset styles when a valid use case is selected
+    setLabelColor(selectedType ? "black" : "red");
+    setLabelFontWeight(selectedType ? "normal" : "bold");
+  };
+
+  const handleSelectDataClick = () => {
+    // Check if a use case is not selected
+    if (!useCaseType) {
+      setLabelColor("red");
+      setLabelFontWeight("bold");
+    } else {
+      const reportForm = document.getElementById("reportForm");
+      const useCaseForm = document.getElementById("useCaseForm");
+      if (reportForm) {
+        if (
+          reportForm.style.visibility === "hidden" ||
+          reportForm.style.visibility === ""
+        ) {
+          reportForm.style.visibility = "visible";
+        } else {
+          reportForm.style.visibility = "hidden";
+        }
+      }
+
+      if (useCaseForm) {
+        if (
+          useCaseForm.style.visibility === "hidden" ||
+          useCaseForm.style.visibility === ""
+        ) {
+          useCaseForm.style.visibility = "visible";
+        } else {
+          useCaseForm.style.visibility = "hidden";
+        }
+      }
+    }
+
+    // Logic to toggle visibility of report and use case forms
   };
 
   useEffect(() => {
@@ -1624,14 +1664,34 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             className="esri-widget--button border-0 select-tool-btn d-flex align-items-center justify-content-center"
             onClick={() => {
               const useCaseForm = document.getElementById("useCaseForm");
+              const reportForm = document.getElementById("reportForm");
               if (useCaseForm) {
                 if (
                   useCaseForm.style.visibility === "hidden" ||
                   useCaseForm.style.visibility === ""
                 ) {
-                  useCaseForm.style.visibility = "visible";
+                  if (reportForm.style.visibility === "visible") {
+                    reportForm.style.visibility = "hidden";
+                    setUsingCustomBoundary(false);
+                    setBoundaryType(""); // Reset boundary type
+                    setSelectedRecordIndex("");
+                    setSelectedDatasets([]); // Reset selected datasets
+                    setLastGraphicGeometry(null); // Reset the last graphic geometry
+                    setUseCaseType(""); // Reset use case type
+                  } else if (
+                    reportForm.style.visibility === "hidden" ||
+                    reportForm.style.visibility === ""
+                  ) {
+                    useCaseForm.style.visibility = "visible";
+                  }
                 } else {
                   useCaseForm.style.visibility = "hidden";
+                  setUsingCustomBoundary(false);
+                  setBoundaryType(""); // Reset boundary type
+                  setSelectedRecordIndex("");
+                  setSelectedDatasets([]); // Reset selected datasets
+                  setLastGraphicGeometry(null); // Reset the last graphic geometry
+                  setUseCaseType(""); // Reset use case type
                 }
               }
             }}
@@ -1670,6 +1730,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 display: "block",
                 marginBottom: "10px",
                 pointerEvents: "auto",
+                color: labelColor,
+                fontWeight: labelFontWeight,
               }}
             >
               Please select your use case:
@@ -1696,31 +1758,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
               }
               onMouseEnter={() => setIsHoveredUseCase(true)}
               onMouseLeave={() => setIsHoveredUseCase(false)}
-              onClick={() => {
-                const reportForm = document.getElementById("reportForm");
-                const useCaseForm = document.getElementById("useCaseForm");
-                if (reportForm) {
-                  if (
-                    reportForm.style.visibility === "hidden" ||
-                    reportForm.style.visibility === ""
-                  ) {
-                    reportForm.style.visibility = "visible";
-                  } else {
-                    reportForm.style.visibility = "hidden";
-                  }
-                }
-
-                if (useCaseForm) {
-                  if (
-                    useCaseForm.style.visibility === "hidden" ||
-                    useCaseForm.style.visibility === ""
-                  ) {
-                    useCaseForm.style.visibility = "visible";
-                  } else {
-                    useCaseForm.style.visibility = "hidden";
-                  }
-                }
-              }}
+              onClick={handleSelectDataClick}
             >
               Select Data
             </button>
