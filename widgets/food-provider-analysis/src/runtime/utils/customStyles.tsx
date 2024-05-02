@@ -119,3 +119,17 @@ export const customButtonStyle: CSSProperties = {
   cursor: "pointer",
   pointerEvents: "auto",
 };
+
+export const customPdfCloseButton: CSSProperties = {
+  margin: "10px",
+  border: "1px solid rgb(204, 204, 204)",
+  fontWeight: "bold",
+  fontSize: "Large",
+};
+
+export const customPdfCloseButtonHover: CSSProperties = {
+  backgroundColor: "#e6adad",
+  border: "1px solid #ff0000",
+  fontWeight: "bold",
+  fontSize: "Large",
+};

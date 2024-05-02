@@ -25,6 +25,8 @@ import {
   reportFormStyle,
   useCaseFormStyle,
   dropdownStyle,
+  customPdfCloseButton,
+  customPdfCloseButtonHover,
 } from "./utils/customStyles";
 import {
   useDatasetChangeHandler,
@@ -72,8 +74,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [pdfGenerationComplete, setPdfGenerationComplete] = useState(false);
   const [boundaryType, setBoundaryType] = useState<string | null>(null);
   const [useCaseType, setUseCaseType] = useState("");
-  const [labelColor, setLabelColor] = useState("black"); // Default color
-  const [labelFontWeight, setLabelFontWeight] = useState("normal");
+  const [UseLabelColor, setUseLabelColor] = useState("black"); // Default color
+  const [UseLabelFontWeight, setUseLabelFontWeight] = useState("normal");
+  const [SelLabelColor, setSelLabelColor] = useState("black"); // Default color
+  const [SelLabelFontWeight, setSelLabelFontWeight] = useState("normal");
+  const [BndryLabelColor, setBndryLabelColor] = useState("black"); // Default color
+  const [BndryLabelFontWeight, setBndryLabelFontWeight] = useState("normal");
+  const [DatLabelColor, setDatLabelColor] = useState("black"); // Default color
+  const [DatLabelFontWeight, setDatLabelFontWeight] = useState("normal");
   const [selectedDatasets, setSelectedDatasets] = useState([]);
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [loadingDots, setLoadingDots] = useState(1);
@@ -148,6 +156,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [usingCustomBoundary, setUsingCustomBoundary] = React.useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isHoveredUseCase, setIsHoveredUseCase] = useState(false);
+  const [isHoveredReport, setIsHoveredReport] = useState(false);
   const [jimuMapView, setJimuMapView] = useState(null);
   const [sketchWidget, setSketchWidget] = useState(null);
   const [sketchLayer, setSketchLayer] = useState(null);
@@ -603,6 +612,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     setSelectedDatasets([]); // Reset selected datasets
     setLastGraphicGeometry(null); // Reset the last graphic geometry
     setUseCaseType(""); // Reset use case type
+    setBndryLabelColor("black");
+    setBndryLabelFontWeight("normal");
+    setSelLabelColor("black");
+    setSelLabelFontWeight("normal");
+    setUseLabelColor("black");
+    setUseLabelFontWeight("normal");
+    setDatLabelColor("black");
+    setDatLabelFontWeight("normal");
   };
 
   const handleCloseUseCase = () => {
@@ -621,6 +638,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     setSelectedDatasets([]); // Reset selected datasets
     setLastGraphicGeometry(null); // Reset the last graphic geometry
     setUseCaseType(""); // Reset use case type
+    setBndryLabelColor("black");
+    setBndryLabelFontWeight("normal");
+    setSelLabelColor("black");
+    setSelLabelFontWeight("normal");
+    setUseLabelColor("black");
+    setUseLabelFontWeight("normal");
+    setDatLabelColor("black");
+    setDatLabelFontWeight("normal");
   };
 
   const attributeKey = ATTRIBUTE_MAP[boundaryType];
@@ -1567,21 +1592,24 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         setSelectedRecord
       );
     }
+
+    setBndryLabelColor(selectedType ? "black" : "red");
+    setBndryLabelFontWeight(selectedType ? "normal" : "bold");
   };
 
   const onUseCaseTypeChange = (e) => {
     const selectedType = e.target.value;
     setUseCaseType(selectedType);
     // Reset styles when a valid use case is selected
-    setLabelColor(selectedType ? "black" : "red");
-    setLabelFontWeight(selectedType ? "normal" : "bold");
+    setUseLabelColor(selectedType ? "black" : "red");
+    setUseLabelFontWeight(selectedType ? "normal" : "bold");
   };
 
   const handleSelectDataClick = () => {
     // Check if a use case is not selected
     if (!useCaseType) {
-      setLabelColor("red");
-      setLabelFontWeight("bold");
+      setUseLabelColor("red");
+      setUseLabelFontWeight("bold");
     } else {
       const reportForm = document.getElementById("reportForm");
       const useCaseForm = document.getElementById("useCaseForm");
@@ -1643,6 +1671,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 setSelectedDatasets([]); // Reset selected datasets
                 setLastGraphicGeometry(null); // Reset the last graphic geometry
                 setUseCaseType(""); // Reset use case type
+                setBndryLabelColor("black");
+                setBndryLabelFontWeight("normal");
+                setSelLabelColor("black");
+                setSelLabelFontWeight("normal");
+                setUseLabelColor("black");
+                setUseLabelFontWeight("normal");
+                setDatLabelColor("black");
+                setDatLabelFontWeight("normal");
               }}
             >
               <b>Cancel</b>
@@ -1678,6 +1714,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     setSelectedDatasets([]); // Reset selected datasets
                     setLastGraphicGeometry(null); // Reset the last graphic geometry
                     setUseCaseType(""); // Reset use case type
+                    setBndryLabelColor("black");
+                    setBndryLabelFontWeight("normal");
+                    setSelLabelColor("black");
+                    setSelLabelFontWeight("normal");
+                    setUseLabelColor("black");
+                    setUseLabelFontWeight("normal");
+                    setDatLabelColor("black");
+                    setDatLabelFontWeight("normal");
                   } else if (
                     reportForm.style.visibility === "hidden" ||
                     reportForm.style.visibility === ""
@@ -1692,6 +1736,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                   setSelectedDatasets([]); // Reset selected datasets
                   setLastGraphicGeometry(null); // Reset the last graphic geometry
                   setUseCaseType(""); // Reset use case type
+                  setBndryLabelColor("black");
+                  setBndryLabelFontWeight("normal");
+                  setSelLabelColor("black");
+                  setSelLabelFontWeight("normal");
+                  setUseLabelColor("black");
+                  setUseLabelFontWeight("normal");
+                  setDatLabelColor("black");
+                  setDatLabelFontWeight("normal");
                 }
               }
             }}
@@ -1730,8 +1782,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 display: "block",
                 marginBottom: "10px",
                 pointerEvents: "auto",
-                color: labelColor,
-                fontWeight: labelFontWeight,
+                color: UseLabelColor,
+                fontWeight: UseLabelFontWeight,
               }}
             >
               Please select your use case:
@@ -1742,9 +1794,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
               onChange={onUseCaseTypeChange}
             >
               <option value="">Select a use case</option>
+              <option value="Demographics">Demographics</option>
+              <option value="Education">Education</option>
+              <option value="Food Assistance">Food Assistance</option>
               <option value="Food Availability">Food Availability</option>
+              <option value="Green Spaces">Green Spaces</option>
               <option value="Health">Health</option>
-              <option value="Economics">Economics</option>
+              <option value="Neighborhood Characteristics">
+                Neighborhood Characteristics
+              </option>
             </select>
 
             <button
@@ -1788,6 +1846,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 display: "block",
                 marginBottom: "10px",
                 pointerEvents: "auto",
+                color: BndryLabelColor,
+                fontWeight: BndryLabelFontWeight,
               }}
             >
               Please select your boundary type:
@@ -1821,13 +1881,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     display: "block",
                     marginTop: "20px",
                     marginBottom: "10px",
+                    color: SelLabelColor,
+                    fontWeight: SelLabelFontWeight,
                   }}
                 >
                   Please choose your boundary:
                 </label>
                 <select
                   value={selectedRecordIndex}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     handleDropdownChange(
                       e,
                       boundaryType,
@@ -1842,8 +1904,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                       },
                       setSelectedRecordIndex,
                       setSelectedRecord
-                    )
-                  }
+                    );
+
+                    setSelLabelColor(selectedRecordIndex ? "black" : "red");
+                    setSelLabelFontWeight(
+                      selectedRecordIndex ? "normal" : "bold"
+                    );
+                  }}
                   style={dropdownStyle}
                 >
                   <option value="" disabled selected>
@@ -1909,6 +1976,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 display: "block",
                 marginTop: "20px",
                 marginBottom: "10px",
+                color: DatLabelColor,
+                fontWeight: DatLabelFontWeight,
               }}
             >
               Please choose your datasets:
@@ -1937,7 +2006,11 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                   <input
                     type="checkbox"
                     checked={selectedDatasets.includes(dataset.id)}
-                    onChange={() => handleDatasetChange(dataset.id)}
+                    onChange={() => {
+                      handleDatasetChange(dataset.id);
+                      setDatLabelColor("black");
+                      setDatLabelFontWeight("normal");
+                    }}
                     style={{ marginRight: "8px", pointerEvents: "auto" }}
                   />
                   {dataset.name}
@@ -1964,7 +2037,29 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 }
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                onClick={handleReportClick}
+                // if there is no boundary selected set the label and font color to red
+                onClick={() => {
+                  if (!boundaryType) {
+                    setBndryLabelColor("red");
+                    setBndryLabelFontWeight("bold");
+                  }
+                  if (!customBoundarySelected && !selectedRecordIndex) {
+                    setSelLabelColor("red");
+                    setSelLabelFontWeight("bold");
+                  }
+                  if (selectedDatasets.length === 0) {
+                    setDatLabelColor("red");
+                    setDatLabelFontWeight("bold");
+                  }
+
+                  if (
+                    boundaryType &&
+                    (selectedRecordIndex || customBoundarySelected) &&
+                    selectedDatasets.length > 0
+                  ) {
+                    handleReportClick();
+                  }
+                }}
               >
                 View Report
               </button>
@@ -2019,7 +2114,16 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 >
                   <button
                     onClick={() => setShowPDFPane(false)}
-                    style={{ margin: "10px" }}
+                    style={
+                      isHoveredReport
+                        ? {
+                            ...customPdfCloseButton,
+                            ...customPdfCloseButtonHover,
+                          }
+                        : customPdfCloseButton
+                    }
+                    onMouseEnter={() => setIsHoveredReport(true)}
+                    onMouseLeave={() => setIsHoveredReport(false)}
                   >
                     Close
                   </button>
