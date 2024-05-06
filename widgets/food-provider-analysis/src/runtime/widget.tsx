@@ -267,14 +267,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         ) as GroupLayer;
         retailFoodOutlets.load().then(() => {
           const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(
-            2
+            3
           ) as GroupLayer;
           restaurants_GroupLayer.load().then(() => {
             loadAndSetLayer(restaurants_GroupLayer, 2, setRestaurants); // Adjust if more layers need to be loaded
           });
 
           const retailFoodMarkets_GroupLayer =
-            retailFoodOutlets.layers.getItemAt(1) as GroupLayer;
+            retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
           retailFoodMarkets_GroupLayer.load().then(() => {
             loadAndSetLayer(
               retailFoodMarkets_GroupLayer,
@@ -283,45 +283,97 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             ); // Adjust if more layers need to be loaded
           });
 
-          loadAndSetLayer(retailFoodOutlets, 0, setFarmersMarkets); // Loading directly as it's a feature layer
+          loadAndSetLayer(retailFoodOutlets, 1, setFarmersMarkets); // Loading directly as it's a feature layer
         });
 
         const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(
           5
         ) as GroupLayer;
         residentHealth_GroupLayer.load().then(() => {
+          const depression_GroupLayer =
+            residentHealth_GroupLayer.layers.getItemAt(0) as GroupLayer;
+          depression_GroupLayer.load().then(() => {
+            loadAndSetLayer(depression_GroupLayer, 2, setDepression);
+          });
+          const heartDisease_GroupLayer =
+            residentHealth_GroupLayer.layers.getItemAt(1) as GroupLayer;
+          heartDisease_GroupLayer.load().then(() => {
+            loadAndSetLayer(heartDisease_GroupLayer, 3, setHeartDisease);
+          });
+          const diabetes_GroupLayer =
+            residentHealth_GroupLayer.layers.getItemAt(2) as GroupLayer;
+          diabetes_GroupLayer.load().then(() => {
+            loadAndSetLayer(diabetes_GroupLayer, 3, setDiabetes);
+          });
+
+          const obesity_GroupLayer = residentHealth_GroupLayer.layers.getItemAt(
+            3
+          ) as GroupLayer;
+          obesity_GroupLayer.load().then(() => {
+            loadAndSetLayer(obesity_GroupLayer, 3, setObesity);
+          });
+
           // Asynchronously load each layer in the Resident Health Group and set their respective states
           loadAndSetLayer(residentHealth_GroupLayer, 4, setFoodInsecurity);
-          loadAndSetLayer(residentHealth_GroupLayer, 3, setObesity);
-          loadAndSetLayer(residentHealth_GroupLayer, 2, setDiabetes);
-          loadAndSetLayer(residentHealth_GroupLayer, 1, setHeartDisease);
-          loadAndSetLayer(residentHealth_GroupLayer, 0, setDepression);
         });
 
         const demographics = LACountyWebMap.layers.getItemAt(4) as GroupLayer;
         demographics.load().then(() => {
+          const race_GroupLayer = demographics.layers.getItemAt(
+            7
+          ) as GroupLayer;
+          race_GroupLayer.load().then(() => {
+            const nothispanic2022_GroupLayer = race_GroupLayer.layers.getItemAt(
+              10
+            ) as GroupLayer;
+            nothispanic2022_GroupLayer.load().then(() => {
+              loadAndSetLayer(nothispanic2022_GroupLayer, 0, setRace);
+            });
+          });
+
+          const age_GroupLayer = demographics.layers.getItemAt(4) as GroupLayer;
+          age_GroupLayer.load().then(() => {
+            const age2022_GroupLayer = age_GroupLayer.layers.getItemAt(
+              5
+            ) as GroupLayer;
+            age2022_GroupLayer.load().then(() => {
+              loadAndSetLayer(age2022_GroupLayer, 1, setAge);
+            });
+          });
+          const vehicleOwnership_GroupLayer = demographics.layers.getItemAt(
+            3
+          ) as GroupLayer;
+
+          vehicleOwnership_GroupLayer.load().then(() => {
+            const vehicleOwnershipLandowners_GroupLayer =
+              vehicleOwnership_GroupLayer.layers.getItemAt(0) as GroupLayer;
+            vehicleOwnershipLandowners_GroupLayer.load().then(() => {
+              loadAndSetLayer(
+                vehicleOwnershipLandowners_GroupLayer,
+                5,
+                setVehicleOwnershipLandowners
+              );
+            });
+            const vehicleOwnershipRenters_GroupLayer =
+              vehicleOwnership_GroupLayer.layers.getItemAt(1) as GroupLayer;
+            vehicleOwnershipRenters_GroupLayer.load().then(() => {
+              loadAndSetLayer(
+                vehicleOwnershipRenters_GroupLayer,
+                5,
+                setVehicleOwnershipRenters
+              );
+            });
+          });
           // Process each group layer within demographics and load their respective layers
           const groupsToLoad = [
-            { groupIndex: 11, layerIndex: 5, setter: setIncome },
-            { groupIndex: 10, layerIndex: 5, setter: setPoverty },
-            { groupIndex: 9, layerIndex: 5, setter: setHispanic },
-            { groupIndex: 8, layerIndex: 11, setter: setRace },
-            { groupIndex: 7, layerIndex: 5, setter: setEnglishSecondLanguage },
-            { groupIndex: 6, layerIndex: 5, setter: setImmigrationStatus },
-            {
-              groupIndex: 5,
-              layerIndex: 5,
-              setter: setVehicleOwnershipLandowners,
-            },
-            {
-              groupIndex: 4,
-              layerIndex: 5,
-              setter: setVehicleOwnershipRenters,
-            },
-            { groupIndex: 3, layerIndex: 5, setter: setHouseholdSize },
-            { groupIndex: 2, layerIndex: 5, setter: setDisability },
-            { groupIndex: 1, layerIndex: 6, setter: setHealthInsurance },
-            { groupIndex: 0, layerIndex: 5, setter: setAge },
+            { groupIndex: 10, layerIndex: 5, setter: setIncome },
+            { groupIndex: 9, layerIndex: 5, setter: setPoverty },
+            { groupIndex: 8, layerIndex: 5, setter: setHispanic },
+            { groupIndex: 6, layerIndex: 5, setter: setEnglishSecondLanguage },
+            { groupIndex: 5, layerIndex: 5, setter: setImmigrationStatus },
+            { groupIndex: 2, layerIndex: 5, setter: setHouseholdSize },
+            { groupIndex: 1, layerIndex: 5, setter: setDisability },
+            { groupIndex: 0, layerIndex: 6, setter: setHealthInsurance },
           ];
 
           groupsToLoad.forEach(({ groupIndex, layerIndex, setter }) => {
