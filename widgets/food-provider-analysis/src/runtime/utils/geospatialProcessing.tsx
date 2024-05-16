@@ -192,6 +192,8 @@ export const filterPointsWithinPolygon = async (
                       return newData;
                     });
 
+                    console.log("Found matching symbol for feature.");
+
                     setGlobalLegendData((prevData) => {
                       const newData = { ...prevData };
                       // Initialize an empty array to track unique outline colors
@@ -201,6 +203,7 @@ export const filterPointsWithinPolygon = async (
                         featureLayerRenderer.uniqueValueInfos.reduce(
                           (acc, info) => {
                             const symbol = info.symbol.clone();
+                            console.log("Symbol: ", symbol);
 
                             const fillLayer =
                               symbol.data.symbol.symbolLayers.find(
@@ -229,9 +232,9 @@ export const filterPointsWithinPolygon = async (
 
                               // Check if the outline color is already in the uniqueOutlineColors array
                               if (
-                                !uniqueOutlineColors.includes(rgbaOutlineColor)
+                                !uniqueOutlineColors.includes(rgbaFillColor)
                               ) {
-                                uniqueOutlineColors.push(rgbaOutlineColor); // Add new unique color to the list
+                                uniqueOutlineColors.push(rgbaFillColor); // Add new unique color to the list
 
                                 // Include this item in the accumulator for the legend data
                                 acc.push({

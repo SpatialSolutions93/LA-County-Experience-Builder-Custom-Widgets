@@ -246,7 +246,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     LACountyWebMap.load()
       .then(() => {
         const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(
-          7
+          6
         ) as GroupLayer;
         foodAssistanceAndBenefits.load().then(() => {
           // Load and set each layer
@@ -263,7 +263,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         });
 
         const retailFoodOutlets = LACountyWebMap.layers.getItemAt(
-          6
+          5
         ) as GroupLayer;
         retailFoodOutlets.load().then(() => {
           const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(
@@ -287,7 +287,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         });
 
         const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(
-          5
+          4
         ) as GroupLayer;
         residentHealth_GroupLayer.load().then(() => {
           const depression_GroupLayer =
@@ -317,7 +317,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           loadAndSetLayer(residentHealth_GroupLayer, 4, setFoodInsecurity);
         });
 
-        const demographics = LACountyWebMap.layers.getItemAt(4) as GroupLayer;
+        const demographics = LACountyWebMap.layers.getItemAt(3) as GroupLayer;
         demographics.load().then(() => {
           const race_GroupLayer = demographics.layers.getItemAt(
             7
@@ -395,7 +395,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         });
 
         const neighborhoodCharacteristics_GroupLayer =
-          LACountyWebMap.layers.getItemAt(3) as GroupLayer;
+          LACountyWebMap.layers.getItemAt(2) as GroupLayer;
         neighborhoodCharacteristics_GroupLayer.load().then(() => {
           // Load each feature layer within the neighborhood characteristics group
           loadAndSetLayer(
@@ -416,7 +416,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         });
 
         const greenAndGardenSpaces = LACountyWebMap.layers.getItemAt(
-          2
+          1
         ) as GroupLayer;
         greenAndGardenSpaces.load().then(() => {
           // Load each feature layer within the Green and Garden Spaces group
@@ -425,7 +425,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           loadAndSetLayer(greenAndGardenSpaces, 0, setParksAndGardens);
         });
 
-        const schools = LACountyWebMap.layers.getItemAt(1) as GroupLayer;
+        const schools = LACountyWebMap.layers.getItemAt(0) as GroupLayer;
         schools.load().then(() => {
           // Load each feature layer within the Schools group
           loadAndSetLayer(schools, 2, setPublicElementarySchools);
@@ -960,7 +960,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             columns: [
               {}, // Empty column for padding on the left side
               {
-                text: `Food Availability in ${selectedFeatureName}`,
+                text: `${selectedFeatureName} Food System Analysis`,
                 style: "title_main",
                 width: canvasWidth * 0.75, // 75% of the canvas width
                 alignment: "center",
@@ -1018,96 +1018,60 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
       let textGroup;
 
-      if (selectedFeatureName === "Alhambra") {
-        if (datasetName === "CalFresh Food Retailers") {
+      if (selectedFeatureName === "Hyde Park") {
+        if (datasetName === "Retail Food Markets") {
           textGroup = {
             stack: [
               {
-                text: `${bullet} 42 ${datasetName} in ${selectedFeatureName}`,
+                text: `${bullet} 38 Retail Food Markets in Hyde Park`,
                 style: "bodyText",
               },
               {
-                text: `${bullet} 1 ${datasetName} for every 1,934 people`,
+                text: `${bullet} 1 Retail Food Market for every 938 people`,
                 style: "bodyText",
               },
               {
-                text: `${bullet} 5.5 ${datasetName} every square mile`,
+                text: `${bullet} 13 Retail Food Markets every square mile`,
                 style: "bodyText",
               },
             ],
             margin: [0, -183, 0, 0], // Adjust this margin to move the entire group up by 200 units
           };
-        } else if (datasetName === "Retail Food Markets") {
+        } else if (datasetName === "Food Insecurity") {
           textGroup = {
             stack: [
               {
-                text: `${bullet} 82 ${datasetName} in ${selectedFeatureName}`,
-                style: "bodyText",
-              },
-              {
-                text: `${bullet} 1 ${datasetName} for every 990 people`,
-                style: "bodyText",
-              },
-              {
-                text: `${bullet} 10.75 ${datasetName} every square mile`,
+                text: `${bullet} 12% of the population in Hyde Park is food insecure`,
                 style: "bodyText",
               },
             ],
             margin: [0, -183, 0, 0], // Adjust this margin to move the entire group up by 200 units
           };
-        } else if (datasetName === "WIC Food Retailers") {
+        } else if (datasetName === "Diabetes") {
           textGroup = {
             stack: [
               {
-                text: `${bullet} 4 ${datasetName} in ${selectedFeatureName}`,
-                style: "bodyText",
-              },
-              {
-                text: `${bullet} 1 ${datasetName} for every 20,303 people`,
-                style: "bodyText",
-              },
-              {
-                text: `${bullet} .52 ${datasetName} every square mile`,
+                text: `${bullet} 16% of the population in Hyde Park has diabetes`,
                 style: "bodyText",
               },
             ],
             margin: [0, -183, 0, 0], // Adjust this margin to move the entire group up by 200 units
           };
-        }
-      } else if (selectedFeatureName === "San Marino") {
-        if (datasetName === "CalFresh Food Retailers") {
+        } else if (datasetName === "Vehicle Ownership (Landowners)") {
           textGroup = {
             stack: [
               {
-                text: `${bullet} 0 ${datasetName} in ${selectedFeatureName}`,
+                text: `${bullet} 5% of the population in Hyde Park owns land and a vehicle`,
                 style: "bodyText",
               },
             ],
             margin: [0, -183, 0, 0], // Adjust this margin to move the entire group up by 200 units
           };
-        } else if (datasetName === "Retail Food Markets") {
+        } else if (datasetName === "Redlining") {
           textGroup = {
             stack: [
               {
-                text: `${bullet} 1 ${datasetName} in ${selectedFeatureName}`,
-                style: "bodyText",
-              },
-              {
-                text: `${bullet} 1 ${datasetName} for every 12,254 people`,
-                style: "bodyText",
-              },
-              {
-                text: `${bullet} .27 ${datasetName} every square mile`,
-                style: "bodyText",
-              },
-            ],
-            margin: [0, -183, 0, 0], // Adjust this margin to move the entire group up by 200 units
-          };
-        } else if (datasetName === "WIC Food Retailers") {
-          textGroup = {
-            stack: [
-              {
-                text: `${bullet} 0 ${datasetName} in ${selectedFeatureName}`,
+                text: `${bullet} 8% of Hyde Park was historically redlined`,
                 style: "bodyText",
               },
             ],
