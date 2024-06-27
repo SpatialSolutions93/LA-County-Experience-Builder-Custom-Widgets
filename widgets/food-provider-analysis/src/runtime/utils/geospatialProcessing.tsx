@@ -107,6 +107,10 @@ export const filterPointsWithinPolygon = async (
               if (intersectedGeometry) {
                 // For ClassBreaksRenderer, find the correct symbol based on the feature's attribute
                 let symbol;
+                console.log(
+                  "Feature Layer Renderer Type: ",
+                  featureLayerRenderer.type
+                );
                 if (featureLayerRenderer.type === "class-breaks") {
                   const attributeValue =
                     feature.attributes[featureLayerRenderer.field];
@@ -256,6 +260,8 @@ export const filterPointsWithinPolygon = async (
                       return newData;
                     });
                   }
+                } else if (featureLayerRenderer.type === "simple") {
+                  symbol = featureLayerRenderer.symbol.clone();
                 }
                 if (symbol) {
                   console.log("Found matching symbol for feature.");

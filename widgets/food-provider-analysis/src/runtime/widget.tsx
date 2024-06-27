@@ -92,6 +92,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [farmersMarkets, setFarmersMarkets] = useState<FeatureLayer | null>(
     null
   );
+  const [foodDeserts, setFoodDeserts] = useState<FeatureLayer | null>(null);
+  const [foodSwamps, setFoodSwamps] = useState<FeatureLayer | null>(null);
   const [calFreshFoodRetailer, setCalFreshFoodRetailer] =
     useState<FeatureLayer | null>(null);
   const [calFreshRestaurant, setCalFreshRestaurant] =
@@ -162,6 +164,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [sketchLayer, setSketchLayer] = useState(null);
   const [lastGraphicGeometry, setLastGraphicGeometry] = useState(null); // State to hold the geometry
   const [customBoundarySelected, setCustomBoundarySelected] = useState(false);
+
+  let pointCounts = []; // Array to store point counts
 
   const handleSketchWidget = (jimuMapView) => {
     if (!jimuMapView || !jimuMapView.view) return;
@@ -267,23 +271,31 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         ) as GroupLayer;
         retailFoodOutlets.load().then(() => {
           const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(
-            3
+            4
           ) as GroupLayer;
           restaurants_GroupLayer.load().then(() => {
-            loadAndSetLayer(restaurants_GroupLayer, 2, setRestaurants); // Adjust if more layers need to be loaded
+            loadAndSetLayer(restaurants_GroupLayer, 4, setRestaurants); // Adjust if more layers need to be loaded
           });
 
           const retailFoodMarkets_GroupLayer =
-            retailFoodOutlets.layers.getItemAt(2) as GroupLayer;
+            retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
           retailFoodMarkets_GroupLayer.load().then(() => {
             loadAndSetLayer(
               retailFoodMarkets_GroupLayer,
-              2,
+              4,
               setRetailFoodMarkets
             ); // Adjust if more layers need to be loaded
           });
 
-          loadAndSetLayer(retailFoodOutlets, 1, setFarmersMarkets); // Loading directly as it's a feature layer
+          const foodDeserts_GroupLayer = retailFoodOutlets.layers.getItemAt(
+            1
+          ) as GroupLayer;
+          foodDeserts_GroupLayer.load().then(() => {
+            loadAndSetLayer(foodDeserts_GroupLayer, 0, setFoodDeserts);
+          });
+
+          loadAndSetLayer(retailFoodOutlets, 2, setFarmersMarkets); // Loading directly as it's a feature layer
+          loadAndSetLayer(retailFoodOutlets, 0, setFoodSwamps);
         });
 
         const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(
@@ -459,45 +471,47 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       dataSource: englishSecondLanguage,
     },
     { id: 12, name: "Farmer's Markets", dataSource: farmersMarkets },
-    { id: 13, name: "Food Insecurity", dataSource: foodInsecurity },
-    { id: 14, name: "Food Pantries", dataSource: foodPantry },
-    { id: 16, name: "Health Insurance", dataSource: healthInsurance },
-    { id: 17, name: "Healthy Places Index", dataSource: healthyPlacesIndex },
-    { id: 18, name: "Heart Disease", dataSource: heartDisease },
-    { id: 19, name: "Hispanic or Latino", dataSource: hispanic },
-    { id: 20, name: "Household Size", dataSource: householdSize },
-    { id: 21, name: "Immigration Status", dataSource: immigrationStatus },
-    { id: 22, name: "Income", dataSource: income },
-    { id: 23, name: "Obesity", dataSource: obesity },
-    { id: 24, name: "Parks", dataSource: parks },
-    { id: 25, name: "Parks and Gardens", dataSource: parksAndGardens },
-    { id: 26, name: "Poverty", dataSource: poverty }, // NEW
+    { id: 13, name: "Food Deserts", dataSource: foodDeserts },
+    { id: 14, name: "Food Insecurity", dataSource: foodInsecurity },
+    { id: 15, name: "Food Pantries", dataSource: foodPantry },
+    { id: 16, name: "Food Swamps", dataSource: foodSwamps },
+    { id: 17, name: "Health Insurance", dataSource: healthInsurance },
+    { id: 18, name: "Healthy Places Index", dataSource: healthyPlacesIndex },
+    { id: 19, name: "Heart Disease", dataSource: heartDisease },
+    { id: 20, name: "Hispanic or Latino", dataSource: hispanic },
+    { id: 21, name: "Household Size", dataSource: householdSize },
+    { id: 22, name: "Immigration Status", dataSource: immigrationStatus },
+    { id: 23, name: "Income", dataSource: income },
+    { id: 24, name: "Obesity", dataSource: obesity },
+    { id: 25, name: "Parks", dataSource: parks },
+    { id: 26, name: "Parks and Gardens", dataSource: parksAndGardens },
+    { id: 27, name: "Poverty", dataSource: poverty }, // NEW
     {
-      id: 27,
+      id: 28,
       name: "Public Elementary Schools",
       dataSource: publicElementarySchools,
     },
-    { id: 28, name: "Public High Schools", dataSource: publicHighSchools },
-    { id: 29, name: "Public Middle Schools", dataSource: publicMiddleSchools },
-    { id: 30, name: "Redlining", dataSource: redlining },
-    { id: 31, name: "Restaurants", dataSource: restaurants },
-    { id: 32, name: "Retail Food Markets", dataSource: retailFoodMarkets },
+    { id: 29, name: "Public High Schools", dataSource: publicHighSchools },
+    { id: 30, name: "Public Middle Schools", dataSource: publicMiddleSchools },
+    { id: 31, name: "Redlining", dataSource: redlining },
+    { id: 32, name: "Restaurants", dataSource: restaurants },
+    { id: 33, name: "Retail Food Markets", dataSource: retailFoodMarkets },
     {
-      id: 33,
+      id: 34,
       name: "Social Vulnerability Index",
       dataSource: socialVulnerabilityIndex,
     },
     {
-      id: 34,
+      id: 35,
       name: "Vehicle Ownership (Landowners)",
       dataSource: vehicleOwnershipLandowners,
     },
     {
-      id: 35,
+      id: 36,
       name: "Vehicle Ownership (Renters)",
       dataSource: vehicleOwnershipRenters,
     },
-    { id: 36, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
+    { id: 37, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
   ];
 
   function getDatasetName(datasetId) {
@@ -778,101 +792,105 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       if (selectedDatasets.includes(12)) {
         webmap.add(farmersMarkets);
       }
-
       if (selectedDatasets.includes(13)) {
-        webmap.add(foodInsecurity);
+        webmap.add(foodDeserts);
       }
 
       if (selectedDatasets.includes(14)) {
+        webmap.add(foodInsecurity);
+      }
+
+      if (selectedDatasets.includes(15)) {
         webmap.add(foodPantry);
       }
 
       if (selectedDatasets.includes(16)) {
-        webmap.add(healthInsurance);
+        webmap.add(foodSwamps);
       }
 
       if (selectedDatasets.includes(17)) {
-        webmap.add(healthyPlacesIndex);
+        webmap.add(healthInsurance);
       }
 
       if (selectedDatasets.includes(18)) {
-        webmap.add(heartDisease);
+        webmap.add(healthyPlacesIndex);
       }
 
       if (selectedDatasets.includes(19)) {
-        webmap.add(hispanic);
+        webmap.add(heartDisease);
       }
 
       if (selectedDatasets.includes(20)) {
-        webmap.add(householdSize);
+        webmap.add(hispanic);
       }
 
       if (selectedDatasets.includes(21)) {
-        webmap.add(immigrationStatus);
+        webmap.add(householdSize);
       }
 
       if (selectedDatasets.includes(22)) {
-        webmap.add(income);
+        webmap.add(immigrationStatus);
       }
 
       if (selectedDatasets.includes(23)) {
-        webmap.add(obesity);
+        webmap.add(income);
       }
 
       if (selectedDatasets.includes(24)) {
-        webmap.add(parks);
+        webmap.add(obesity);
       }
 
       if (selectedDatasets.includes(25)) {
-        webmap.add(parksAndGardens);
+        webmap.add(parks);
       }
 
       if (selectedDatasets.includes(26)) {
-        webmap.add(poverty);
+        webmap.add(parksAndGardens);
       }
 
       if (selectedDatasets.includes(27)) {
-        webmap.add(publicElementarySchools);
+        webmap.add(poverty);
       }
 
       if (selectedDatasets.includes(28)) {
-        webmap.add(publicHighSchools);
+        webmap.add(publicElementarySchools);
       }
 
       if (selectedDatasets.includes(29)) {
-        webmap.add(publicMiddleSchools);
+        webmap.add(publicHighSchools);
       }
 
       if (selectedDatasets.includes(30)) {
-        webmap.add(redlining);
+        webmap.add(publicMiddleSchools);
       }
 
       if (selectedDatasets.includes(31)) {
-        webmap.add(restaurants);
+        webmap.add(redlining);
       }
 
       if (selectedDatasets.includes(32)) {
-        webmap.add(retailFoodMarkets);
+        webmap.add(restaurants);
       }
 
       if (selectedDatasets.includes(33)) {
-        webmap.add(socialVulnerabilityIndex);
+        webmap.add(retailFoodMarkets);
       }
 
       if (selectedDatasets.includes(34)) {
-        webmap.add(vehicleOwnershipLandowners);
+        webmap.add(socialVulnerabilityIndex);
       }
 
       if (selectedDatasets.includes(35)) {
-        webmap.add(vehicleOwnershipRenters);
+        webmap.add(vehicleOwnershipLandowners);
       }
 
       if (selectedDatasets.includes(36)) {
-        webmap.add(wicFoodRetailer);
+        webmap.add(vehicleOwnershipRenters);
       }
 
-      console.log("mapViewRef.current: ", mapViewRef.current);
-      console.log("webmap: ", webmap);
+      if (selectedDatasets.includes(37)) {
+        webmap.add(wicFoodRetailer);
+      }
 
       mapViewRef2.current = mapViewRef.current;
 
@@ -880,8 +898,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         container: mapViewRef2.current,
         map: webmap,
       });
-
-      console.log("Map view: ", mapView);
 
       mapViewRef2.current = mapView;
 
@@ -999,8 +1015,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const overlap = 10; // Set the thickness of your outline
 
-    function generateSlideForDataset(datasetId, datasetName) {
-      console.log("datasetId: ", datasetId);
+    function generateSlideForDataset(datasetId, datasetName, pointCounts) {
       const coloredLine = {
         canvas: [
           {
@@ -1061,7 +1076,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           textGroup = {
             stack: [
               {
-                text: `${bullet} 5% of the population in Hyde Park owns land and a vehicle`,
+                text: `${bullet} 5% of owner occupied housedholds in Hyde Park have no access to a vehicle`,
                 style: "bodyText",
               },
             ],
@@ -1082,7 +1097,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         textGroup = {
           stack: [
             {
-              text: `${bullet} ${pointsInsideFeatureCountRef.current} ${datasetName} in ${selectedFeatureName}`,
+              text: `${bullet} ${pointCounts} ${datasetName} in ${selectedFeatureName}`,
               style: "bodyText",
             },
             {
@@ -1237,12 +1252,16 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     let dynamicSlides = [];
 
-    for (let datasetId of selectedDatasets) {
+    for (let i = 0; i < selectedDatasets.length; i++) {
+      const datasetId = selectedDatasets[i];
       const datasetName = getDatasetName(datasetId);
-      dynamicSlides.push(generateSlideForDataset(datasetId, datasetName));
+      console.log("Point Counts: ", pointCounts);
+      const pointCount = pointCounts[i]; // Get the specific point count for this dataset
+      console.log("pointCount: ", pointCount);
+      dynamicSlides.push(
+        generateSlideForDataset(datasetId, datasetName, pointCount)
+      );
     }
-
-    console.log("dynamicSlides: ", dynamicSlides);
 
     const docDefinition = {
       // Background definition for the red rectangle and black outline
@@ -1375,10 +1394,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       },
     };
 
-    console.log("docDefinition: ", docDefinition);
-
     pdfMake.createPdf(docDefinition).getBlob((blob) => {
-      console.log("Blob: ", blob);
       setPdfBlob(blob);
       setShowPDFPane(true);
     });
@@ -1386,12 +1402,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
   React.useEffect(() => {
     if (imageDimensions) {
-      console.log("globalLegendData: ", globalLegendData);
       generateTestPDF(globalLegendData).then(() => {
         progressCtrRef.current += 1;
-        console.log("Progress counter: ", progressCtrRef.current);
         if (progressCtrRef.current === slideCtrRef.current) {
-          console.log("All screenshots have been processed.");
           setPdfGenerationComplete(true);
           setIsLoadingReport(false);
 
@@ -1541,7 +1554,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
 
         const count = await getPointsInsideFeature(datasetId, layerViews);
-        pointsInsideFeatureCountRef.current = count;
+        pointCounts.push(count);
+
+        console.log("Point Counts in handle report click: ", pointCounts);
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -1558,8 +1573,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           console.error("Error getting image dimensions:", error);
         }
       }
-
-      console.log("Screenshots: ", screenshots);
 
       // Update the state with the collected screenshots
       setMapScreenshotDataArray(screenshots);
@@ -1742,7 +1755,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                     reportForm.style.visibility === "hidden" ||
                     reportForm.style.visibility === ""
                   ) {
-                    useCaseForm.style.visibility = "visible";
+                    reportForm.style.visibility = "visible";
                   }
                 } else {
                   useCaseForm.style.visibility = "hidden";
