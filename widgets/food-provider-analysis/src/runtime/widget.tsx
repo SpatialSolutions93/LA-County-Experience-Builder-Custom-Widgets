@@ -43,6 +43,13 @@ import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
 import { set } from "seamless-immutable";
 import { last } from "lodash-es";
 
+import Map from "@arcgis/core/Map";
+import serviceArea from "@arcgis/core/rest/serviceArea";
+import ServiceAreaParameters from "@arcgis/core/rest/support/ServiceAreaParameters";
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
+import esriConfig from "@arcgis/core/config";
+import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol.js";
+
 const { useRef, useState, useEffect } = React;
 
 // Set up the virtual file system for pdfMake.
@@ -156,14 +163,20 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   );
   const pointsInsideFeatureCountRef = React.useRef(null);
   const [usingCustomBoundary, setUsingCustomBoundary] = React.useState(false);
+  const [usingNetworkBoundary, setUsingNetworkBoundary] = React.useState(false); // FOCUS FOCUS 2
   const [isHovered, setIsHovered] = useState(false);
   const [isHoveredUseCase, setIsHoveredUseCase] = useState(false);
   const [isHoveredReport, setIsHoveredReport] = useState(false);
   const [jimuMapView, setJimuMapView] = useState(null);
   const [sketchWidget, setSketchWidget] = useState(null);
+  const [networkPoint, setNetworkPoint] = useState(null); // FOCUS FOCUS 6
+  const [networkPolygon, setNetworkPolygon] = useState(null); // FOCUS FOCUS 7
   const [sketchLayer, setSketchLayer] = useState(null);
   const [lastGraphicGeometry, setLastGraphicGeometry] = useState(null); // State to hold the geometry
   const [customBoundarySelected, setCustomBoundarySelected] = useState(false);
+  const [isBoundaryConfirmed, setIsBoundaryConfirmed] = useState(false);
+  const [lastNetworkPoint, setLastNetworkPoint] = useState(null);
+  const [lastSelectedType, setLastSelectedType] = useState(null);
 
   let pointCounts = []; // Array to store point counts
 
@@ -174,11 +187,29 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     removeSketchWidget(jimuMapView);
 
     // Create a new GraphicsLayer for the Sketch widget
-    const newSketchLayer = new GraphicsLayer();
+    const newSketchLayer = new GraphicsLayer({
+      title: "Custom Boundary", // Assign a meaningful name here
+    });
     jimuMapView.view.map.add(newSketchLayer); // Adding directly to the map object
 
     // Setup the Sketch widget
     setupSketchWidget(newSketchLayer, jimuMapView.view);
+  };
+
+  const handleNetworkPoint = (jimuMapView) => {
+    if (!jimuMapView || !jimuMapView.view) return;
+
+    // Remove any existing sketch widget
+    removeNetworkPoint(jimuMapView);
+
+    // Create a new GraphicsLayer for the Sketch widget and set its name
+    const newNetworkLayer = new GraphicsLayer({
+      title: "Network Start Point", // Assign a meaningful name here
+    });
+    jimuMapView.view.map.add(newNetworkLayer); // Adding directly to the map object
+
+    // Setup the Sketch widget
+    setupNetworkPoint(newNetworkLayer, jimuMapView.view); // FOCUS FOCUS 5
   };
 
   const setupSketchWidget = (layer, view) => {
@@ -200,6 +231,90 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     setSketchWidget(sketch);
   };
 
+  const setupNetworkPoint = (layer, view) => {
+    const sketch = new Sketch({
+      layer: layer,
+      view: view,
+      availableCreateTools: ["point"],
+    });
+
+    sketch.on("create", (event) => {
+      if (event.state === "start") {
+        // Clear the layer when starting to draw a new point
+        layer.removeAll();
+      } else if (event.state === "complete") {
+        // Add the new point after creation is complete
+        layer.add(event.graphic);
+        setLastNetworkPoint(event.graphic.geometry);
+        console.log("Last Network Point: ", event.graphic);
+        console.log("Last Network Point Geometry: ", event.graphic.geometry);
+        console.log("Last Network Point Value: ", lastNetworkPoint);
+        createServiceArea(event.graphic.geometry, view);
+      }
+    });
+
+    view.ui.add(sketch, "bottom-right");
+    setNetworkPoint(sketch);
+  };
+
+  useEffect(() => {
+    console.log("Updated Last Network Point Value: ", lastNetworkPoint);
+  }, [lastNetworkPoint]); // This useEffect runs whenever lastNetworkPoint changes
+
+  function createServiceArea(point, view) {
+    // Set your API key
+    esriConfig.apiKey =
+      "3NKHt6i2urmWtqOuugvr9fNuioYEHe1MbgtZMzx4xkKtt3k_hFpxrB3DqSMO4o_eyjSkjki6ydmotiDpMa3b9HG8gFgwUOcjNB9GyQHBTSuH76ZyYoBOoLuTgqiu9RoO"; // UPDATE UPDATE
+
+    let markerSymbol = {
+      type: "simple-marker",
+      color: [255, 255, 255], // White marker
+      size: 8,
+    };
+    const locationGraphic = new Graphic({
+      geometry: point,
+      symbol: markerSymbol,
+    });
+
+    const driveTimeCutoffs = [10]; // Minutes
+
+    const serviceAreaParams = new ServiceAreaParameters({
+      facilities: new FeatureSet({
+        features: [locationGraphic],
+      }),
+      defaultBreaks: driveTimeCutoffs,
+      outSpatialReference: view.spatialReference,
+      trimOuterPolygon: true,
+    });
+
+    const serviceAreaUrl =
+      "https://route-api.arcgis.com/arcgis/rest/services/World/ServiceAreas/NAServer/ServiceArea_World/solveServiceArea";
+    serviceArea
+      .solve(serviceAreaUrl, serviceAreaParams)
+      .then((result) => {
+        view.graphics.removeAll();
+        result.serviceAreaPolygons.features.forEach((feature) => {
+          const fillSymbol = new SimpleFillSymbol({
+            color: [255, 50, 50, 0.25], // Semi-transparent red
+            style: "solid",
+            outline: {
+              color: [255, 0, 0, 0.8], // Red outline
+              width: 2,
+            },
+          });
+
+          feature.symbol = fillSymbol;
+          view.graphics.add(feature);
+
+          setNetworkPolygon(feature); // FOCUS FOCUS 10
+          setLastGraphicGeometry(feature.geometry);
+        });
+      })
+      .catch((error) => {
+        console.error("Service Area calculation failed: ", error);
+      });
+  }
+
   const removeSketchWidget = (jimuMapView) => {
     if (!jimuMapView || !jimuMapView.view) return;
 
@@ -209,6 +324,20 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       sketchWidget.layer && jimuMapView.view.map.remove(sketchWidget.layer);
       setSketchWidget(null);
     }
+  };
+
+  const removeNetworkPoint = (jimuMapView) => {
+    if (!jimuMapView || !jimuMapView.view) return;
+
+    // Remove sketch widget
+    if (networkPoint) {
+      jimuMapView.view.ui.remove(networkPoint);
+      networkPoint.layer && jimuMapView.view.map.remove(networkPoint.layer);
+      setNetworkPoint(null);
+    }
+
+    jimuMapView.view.graphics.removeAll();
+    setNetworkPolygon(null);
   };
 
   useEffect(() => {
@@ -225,6 +354,21 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       }
     };
   }, [usingCustomBoundary, jimuMapView]);
+
+  useEffect(() => {
+    if (usingNetworkBoundary && jimuMapView) {
+      handleNetworkPoint(jimuMapView);
+    } else if (!usingNetworkBoundary && jimuMapView) {
+      removeNetworkPoint(jimuMapView);
+    }
+
+    // Cleanup function to remove the Sketch widget when the widget unmounts
+    return () => {
+      if (jimuMapView) {
+        removeNetworkPoint(jimuMapView);
+      }
+    };
+  }, [usingNetworkBoundary, jimuMapView]); // FOCUS FOCUS 4
 
   const onActiveViewChange = (jimuMapView) => {
     setJimuMapView(jimuMapView);
@@ -598,6 +742,13 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       setIsFetchingData(true); // Start fetching when there's an actual boundary type
     }
 
+    if (boundaryType === "Network") {
+      setUsingNetworkBoundary(true); // FOCUS FOCUS 1
+    } else if (boundaryType) {
+      setUsingNetworkBoundary(false); // Reset to false when another option is selected
+      setIsFetchingData(true); // Start fetching when there's an actual boundary type
+    }
+
     if (boundaryType === "Neighborhood") {
       neighborhoods.queryFeatures().then((featureSet) => {
         setNeighborhoodList(sortByAttribute(featureSet.features, "name"));
@@ -673,6 +824,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     //setCustomBoundarySelected(false);
     setCustomBoundarySelected(false);
     setUsingCustomBoundary(false);
+    setUsingNetworkBoundary(false); // FOCUS FOCUS 9
     setBoundaryType(""); // Reset boundary type
     setSelectedRecordIndex("");
     setSelectedDatasets([]); // Reset selected datasets
@@ -699,6 +851,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     //setCustomBoundarySelected(false);
     setCustomBoundarySelected(false);
     setUsingCustomBoundary(false);
+    setUsingNetworkBoundary(false); // FOCUS FOCUS 9
     setBoundaryType(""); // Reset boundary type
     setSelectedRecordIndex("");
     setSelectedDatasets([]); // Reset selected datasets
@@ -891,6 +1044,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       if (selectedDatasets.includes(37)) {
         webmap.add(wicFoodRetailer);
       }
+
+      console.log("Last selected type latter: ", lastSelectedType);
 
       mapViewRef2.current = mapViewRef.current;
 
@@ -1255,9 +1410,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     for (let i = 0; i < selectedDatasets.length; i++) {
       const datasetId = selectedDatasets[i];
       const datasetName = getDatasetName(datasetId);
-      console.log("Point Counts: ", pointCounts);
       const pointCount = pointCounts[i]; // Get the specific point count for this dataset
-      console.log("pointCount: ", pointCount);
       dynamicSlides.push(
         generateSlideForDataset(datasetId, datasetName, pointCount)
       );
@@ -1553,10 +1706,64 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           );
         }
 
+        if (lastSelectedType === "Network" && lastNetworkPoint) {
+          console.log("Adding network point to map");
+          console.log("Final Last Network Point: ", lastNetworkPoint);
+
+          // Create a new GraphicsLayer
+          const graphicsLayerNetwork = new GraphicsLayer();
+
+          // Create the symbol
+          const symbol = new SimpleMarkerSymbol({
+            color: [255, 255, 255], // Set color to white
+            size: 8, // Set size to 12 points
+            style: "circle", // Keep the style as a circle
+            outline: {
+              // Define the outline
+              color: [0, 0, 0], // Set outline color to black
+              width: 2, // Set outline width to 2 points
+            },
+          });
+
+          // Create the graphic with the stored geometry
+          const networkPointGraphic = new Graphic({
+            geometry: lastNetworkPoint,
+            symbol: symbol,
+          });
+
+          // Add the graphic to the graphics layer
+          graphicsLayerNetwork.add(networkPointGraphic);
+
+          console.log(
+            "Final Last Network Point Geometry: ",
+            lastNetworkPoint.toJSON()
+          );
+
+          if (!mapViewRef2.current || !mapViewRef2.current.ready) {
+            console.log("MapView is not ready.");
+            return;
+          }
+
+          console.log(
+            "Graphics Layer Count Before Addition: ",
+            mapViewRef2.current.map.layers.length
+          );
+
+          // Add the graphics layer to the map property of the mapView
+          try {
+            mapViewRef2.current.map.add(graphicsLayerNetwork);
+          } catch (error) {
+            console.error("Error adding graphics layer to map:", error);
+          }
+
+          console.log(
+            "Graphics Layer Count After Addition: ",
+            mapViewRef2.current.map.layers.length
+          );
+        }
+
         const count = await getPointsInsideFeature(datasetId, layerViews);
         pointCounts.push(count);
-
-        console.log("Point Counts in handle report click: ", pointCounts);
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -1597,12 +1804,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   }, [pdfBlob]);
 
   const onBoundaryTypeChange = (event) => {
+    setLastSelectedType(event.target.value);
     const selectedType = event.target.value;
     setBoundaryType(selectedType);
 
     // Check if the selected type is 'Custom'
     if (selectedType === "Custom") {
       console.log("Custom boundary selected.");
+    } else if (selectedType === "Network") {
+      console.log("Network boundary selected."); // FOCUS FOCUS 3
     } else {
       // Proceed with default handling if not 'Custom'
       handleDropdownChange(
@@ -1689,7 +1899,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     return (
       <>
-        {usingCustomBoundary && (
+        {usingCustomBoundary && ( // UPDATE UPDATE
           <div style={customContainerStyle}>
             <div
               style={customButtonStyle}
@@ -1724,6 +1934,111 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             </div>
           </div>
         )}
+
+        {usingNetworkBoundary && !isBoundaryConfirmed && (
+          <div
+            className="record-list"
+            id="reportForm"
+            style={{
+              width: "calc(100% - 300px)",
+              margin: "20px 150px 0px",
+              height: "auto",
+              overflow: "auto",
+              visibility: "visible",
+              backgroundColor: "white",
+              border: "1px solid black",
+              padding: "20px",
+              boxSizing: "border-box",
+              pointerEvents: "auto",
+              position: "absolute",
+              zIndex: 1000,
+              bottom: "36%",
+            }}
+          >
+            <button
+              className="close-report-button"
+              style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                background: "transparent",
+                border: "none",
+                fontSize: "20px",
+                cursor: "pointer",
+                zIndex: 3000,
+              }}
+              onClick={() => setUsingNetworkBoundary(false)}
+            >
+              ×
+            </button>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "10px",
+                pointerEvents: "auto",
+                color: "black",
+                fontWeight: "normal",
+              }}
+            >
+              Please select your boundary type:
+            </label>
+            {/* Boundary Type Dropdown */}
+            {/* Additional form elements like dataset selection */}
+            <button
+              style={{
+                fontSize: "16px",
+                fontWeight: "bold",
+                backgroundColor: "rgb(245, 245, 245)",
+                color: "black",
+                border: "1px solid rgb(204, 204, 204)",
+                padding: "10px 20px",
+                cursor: "pointer",
+              }}
+              onClick={() => setIsBoundaryConfirmed(true)}
+            >
+              Confirm Network Settings
+            </button>
+          </div>
+        )}
+
+        {usingNetworkBoundary &&
+          isBoundaryConfirmed && ( // UPDATE UPDATE
+            <div style={customContainerStyle}>
+              <div
+                style={customButtonStyle}
+                onClick={() => {
+                  setUsingNetworkBoundary(false);
+                  setBoundaryType(""); // Reset boundary type
+                  setSelectedRecordIndex("");
+                  setSelectedDatasets([]); // Reset selected datasets
+                  setLastGraphicGeometry(null); // Reset the last graphic geometry
+                  setUseCaseType(""); // Reset use case type
+                  setBndryLabelColor("black");
+                  setBndryLabelFontWeight("normal");
+                  setSelLabelColor("black");
+                  setSelLabelFontWeight("normal");
+                  setUseLabelColor("black");
+                  setUseLabelFontWeight("normal");
+                  setDatLabelColor("black");
+                  setDatLabelFontWeight("normal");
+                }}
+              >
+                <b onClick={() => setIsBoundaryConfirmed(false)}>Cancel</b>
+              </div>
+              <div
+                id="Custom-Test"
+                style={customButtonStyle}
+                onClick={() => {
+                  setUsingNetworkBoundary(false);
+                  setCustomBoundarySelected(true);
+                }}
+              >
+                <b onClick={() => setIsBoundaryConfirmed(false)}>
+                  Confirm Boundary
+                </b>
+              </div>
+            </div>
+          )}
         <div style={reportButtonStyle}>
           <button
             className="esri-widget--button border-0 select-tool-btn d-flex align-items-center justify-content-center"
@@ -1738,6 +2053,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                   if (reportForm.style.visibility === "visible") {
                     reportForm.style.visibility = "hidden";
                     setUsingCustomBoundary(false);
+                    setUsingNetworkBoundary(false);
                     setBoundaryType(""); // Reset boundary type
                     setSelectedRecordIndex("");
                     setSelectedDatasets([]); // Reset selected datasets
@@ -1760,6 +2076,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 } else {
                   useCaseForm.style.visibility = "hidden";
                   setUsingCustomBoundary(false);
+                  setUsingNetworkBoundary(false);
                   setBoundaryType(""); // Reset boundary type
                   setSelectedRecordIndex("");
                   setSelectedDatasets([]); // Reset selected datasets
@@ -1783,7 +2100,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
         <div style={mapStyle} ref={mapViewRef} id="reportMapView"></div>
 
-        {(!usingCustomBoundary || customBoundarySelected) && (
+        {((!usingCustomBoundary && !usingNetworkBoundary) ||
+          customBoundarySelected) && ( // FOCUS FOCUS
           <div
             className="record-list"
             id="useCaseForm"
@@ -1851,7 +2169,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             </button>
           </div>
         )}
-        {(!usingCustomBoundary || customBoundarySelected) && (
+        {((!usingCustomBoundary && !usingNetworkBoundary) ||
+          customBoundarySelected) && ( // FOCUS FOCUS
           <div className="record-list" id="reportForm" style={reportFormStyle}>
             <button
               className="close-report-button"
@@ -1887,7 +2206,8 @@ export default function Widget(props: AllWidgetProps<unknown>) {
               style={dropdownStyle}
             >
               <option value="">Select a boundary type</option>
-              <option value="Custom">I want to use a custom boundary</option>
+              <option value="Network">Network Boundary</option>
+              <option value="Custom">Custom Boundary</option>
               <option value="City">City</option>
               <option value="Countywide Statistical Area (CSA)">
                 Countywide Statistical Area (CSA)

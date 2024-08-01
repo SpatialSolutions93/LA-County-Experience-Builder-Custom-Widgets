@@ -12,8 +12,6 @@ export function generateLegendItems(
   globalSymbol: string
 ): any[] {
   let legendItems = legendData.map((item) => {
-    console.log("item: ", item);
-
     // If item has item.color, use it as fill color, if it has item.fillColor, use it as fill color, if neither, use transparent
     if (!item.color && !item.fillColor) {
       item.color = "rgba(0, 0, 0, 0)";
@@ -27,52 +25,29 @@ export function generateLegendItems(
     // Determine the fill color
     let fillColor = item.color ? item.color : "rgba(0, 0, 0, 0)";
 
-    console.log("fillColor: ", fillColor);
-
     // Extract RGBA values for fill color
     let fillRGBA = fillColor.match(/\d+/g).map(Number);
 
-    console.log("fillRGBA: ", fillRGBA);
-
-    // Check if alpha value is 0 and adjust RGB to white if so
-    /*     if (fillRGBA[3] === 0) {
-      fillRGBA = [255, 255, 255]; // Set to white
-      console.log("fillRGBA is white: ", fillRGBA);
-    } */
     const [r2, g2, b2] = fillRGBA;
     const fillHexColor = rgbaToHex(r2, g2, b2);
-
-    console.log("fillHexColor: ", fillHexColor);
 
     // Determine the outline color and width
     let outlineColor = item.outlineColor || "rgba(0, 0, 0, 0)";
 
-    console.log("outlineColor: ", outlineColor);
-
     const outlineWidth = item.outlineWidth || 0; // Default to 0 if no width provided
-
-    console.log("outlineWidth: ", outlineWidth);
 
     // Extract RGBA values for outline color
     let outlineRGBA = outlineColor.match(/\d+/g).map(Number);
-    console.log("outlineRGBA: ", outlineRGBA);
-    // Check if alpha value is 0 and adjust RGB to white if so
-    /*     if (outlineRGBA[3] === 0) {
-      outlineRGBA = [255, 255, 255]; // Set to white
-      console.log("outlineRGBA is white: ", outlineRGBA);
-    } */
+
     const [r3, g3, b3] = outlineRGBA;
     const outlineHexColor = rgbaToHex(r3, g3, b3);
-    console.log("outlineHexColor: ", outlineHexColor);
 
     // Adjust the position and size of the inner rectangle to accommodate the outline width
     const innerRectSize = { w: 30 * 2, h: 15 * 2 };
-    console.log("innerRectSize: ", innerRectSize);
     const outerRectSize = {
       w: innerRectSize.w + outlineWidth * 2,
       h: innerRectSize.h + outlineWidth * 2,
     };
-    console.log("outerRectSize: ", outerRectSize);
 
     return {
       columns: [

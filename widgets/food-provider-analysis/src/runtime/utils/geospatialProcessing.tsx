@@ -107,10 +107,6 @@ export const filterPointsWithinPolygon = async (
               if (intersectedGeometry) {
                 // For ClassBreaksRenderer, find the correct symbol based on the feature's attribute
                 let symbol;
-                console.log(
-                  "Feature Layer Renderer Type: ",
-                  featureLayerRenderer.type
-                );
                 if (featureLayerRenderer.type === "class-breaks") {
                   const attributeValue =
                     feature.attributes[featureLayerRenderer.field];
@@ -196,8 +192,6 @@ export const filterPointsWithinPolygon = async (
                       return newData;
                     });
 
-                    console.log("Found matching symbol for feature.");
-
                     setGlobalLegendData((prevData) => {
                       const newData = { ...prevData };
                       // Initialize an empty array to track unique outline colors
@@ -207,7 +201,6 @@ export const filterPointsWithinPolygon = async (
                         featureLayerRenderer.uniqueValueInfos.reduce(
                           (acc, info) => {
                             const symbol = info.symbol.clone();
-                            console.log("Symbol: ", symbol);
 
                             const fillLayer =
                               symbol.data.symbol.symbolLayers.find(
@@ -263,13 +256,7 @@ export const filterPointsWithinPolygon = async (
                 } else if (featureLayerRenderer.type === "simple") {
                   symbol = featureLayerRenderer.symbol.clone();
                 }
-                if (symbol) {
-                  console.log("Found matching symbol for feature.");
-                }
                 if (!symbol) {
-                  console.warn(
-                    "No matching symbol found for feature. Using default symbol."
-                  );
                   symbol = defaultSymbol;
                 }
 
@@ -292,8 +279,6 @@ export const filterPointsWithinPolygon = async (
         mapViewRef.current.map.add(graphicsLayer);
 
         mapViewRef.current.map.layers.remove(featureLayer);
-      } else {
-        console.log("No features returned from query.");
       }
     } catch (error) {
       console.error("Failed to query or intersect features:", error);
