@@ -10,8 +10,7 @@ import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import "./widgetStyles.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import GroupLayer from "@arcgis/core/layers/GroupLayer";
-import * as Logos from "./logos";
+import * as Logos from "../logos";
 import { generateLegendItems } from "./utils/legendUtils";
 import {
   customButtonStyle,
@@ -40,10 +39,6 @@ import {
 import { JimuMapViewComponent } from "jimu-arcgis";
 import Sketch from "@arcgis/core/widgets/Sketch.js";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
-import { set } from "seamless-immutable";
-import { last } from "lodash-es";
-
-import Map from "@arcgis/core/Map";
 import serviceArea from "@arcgis/core/rest/serviceArea";
 import ServiceAreaParameters from "@arcgis/core/rest/support/ServiceAreaParameters";
 import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
@@ -78,7 +73,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [showPDFPane, setShowPDFPane] = useState(false);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [imageDimensions, setImageDimensions] = useState(null);
-  const [pdfGenerationComplete, setPdfGenerationComplete] = useState(false);
   const [boundaryType, setBoundaryType] = useState<string | null>(null);
   const [useCaseType, setUseCaseType] = useState("");
   const [UseLabelColor, setUseLabelColor] = useState("black"); // Default color
@@ -161,7 +155,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [globalSymbol, setGlobalSymbol] = React.useState<Record<string, any>>(
     {}
   );
-  const pointsInsideFeatureCountRef = React.useRef(null);
   const [usingCustomBoundary, setUsingCustomBoundary] = React.useState(false);
   const [usingNetworkBoundary, setUsingNetworkBoundary] = React.useState(false); // FOCUS FOCUS 2
   const [isHovered, setIsHovered] = useState(false);
@@ -170,8 +163,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [jimuMapView, setJimuMapView] = useState(null);
   const [sketchWidget, setSketchWidget] = useState(null);
   const [networkPoint, setNetworkPoint] = useState(null); // FOCUS FOCUS 6
-  const [networkPolygon, setNetworkPolygon] = useState(null); // FOCUS FOCUS 7
-  const [sketchLayer, setSketchLayer] = useState(null);
   const [lastGraphicGeometry, setLastGraphicGeometry] = useState(null); // State to hold the geometry
   const [customBoundarySelected, setCustomBoundarySelected] = useState(false);
   const [isBoundaryConfirmed, setIsBoundaryConfirmed] = useState(false);
@@ -264,7 +255,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   function createServiceArea(point, view) {
     // Set your API key
     esriConfig.apiKey =
-      "3NKHt6i2urmWtqOuugvr9fNuioYEHe1MbgtZMzx4xkKtt3k_hFpxrB3DqSMO4o_eyjSkjki6ydmotiDpMa3b9HG8gFgwUOcjNB9GyQHBTSuH76ZyYoBOoLuTgqiu9RoO"; // UPDATE UPDATE
+      "3NKHt6i2urmWtqOuugvr9acZPaeoYh1EokytZHG0KkLFVSCACYpOqcDJ7y03Kqbi9i5nkuETNtxpWYO8-w31qcoUj_31OC5DGcnQ8Nkz6zT21XZNOMrKUVDO6YiHXfqW"; // UPDATE UPDATE
 
     let markerSymbol = {
       type: "simple-marker",
@@ -306,7 +297,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           feature.symbol = fillSymbol;
           view.graphics.add(feature);
 
-          setNetworkPolygon(feature); // FOCUS FOCUS 10
           setLastGraphicGeometry(feature.geometry);
         });
       })
@@ -337,7 +327,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
 
     jimuMapView.view.graphics.removeAll();
-    setNetworkPolygon(null);
   };
 
   useEffect(() => {
@@ -381,212 +370,71 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       },
     });
 
-    async function loadAndSetLayer(groupLayer, index, setter) {
-      try {
-        const layer = groupLayer.layers.getItemAt(index) as FeatureLayer;
-        await layer.load();
-        setter(layer);
-      } catch (error) {
-        console.error("Error loading layer: ", error);
-      }
-    }
+    const loadAndSetLayer = (layer: any, setter: Function) => {
+      layer
+        .load()
+        .then(() => {
+          setter(layer);
+        })
+        .catch((error: any) => {
+          console.error(`Error loading layer ${layer.id}: `, error);
+        });
+    };
 
     LACountyWebMap.load()
       .then(() => {
-        const foodAssistanceAndBenefits = LACountyWebMap.layers.getItemAt(
-          6
-        ) as GroupLayer;
-        foodAssistanceAndBenefits.load().then(() => {
-          // Load and set each layer
-          loadAndSetLayer(foodAssistanceAndBenefits, 5, setCalFreshCases);
-          loadAndSetLayer(foodAssistanceAndBenefits, 4, setCalFreshGap);
-          loadAndSetLayer(
-            foodAssistanceAndBenefits,
-            3,
-            setCalFreshFoodRetailer
-          );
-          loadAndSetLayer(foodAssistanceAndBenefits, 2, setCalFreshRestaurant);
-          loadAndSetLayer(foodAssistanceAndBenefits, 1, setWicFoodRetailer);
-          loadAndSetLayer(foodAssistanceAndBenefits, 0, setFoodPantry);
-        });
+        // List of layer IDs and their corresponding state setters
+        const layerConfigs = [
+          { id: "18ebc6b8d5a-layer-245", setter: setAge },
+          { id: "18d207e7d8a-layer-65", setter: setCalFreshCases },
+          { id: "18f7a3f2967-layer-268", setter: setCalFreshFoodRetailer },
+          { id: "18d20a05f23-layer-65", setter: setCalFreshGap },
+          { id: "18f7a41e8c3-layer-269", setter: setCalFreshRestaurant },
+          { id: "18707320643-layer-42", setter: setCommunityGardens },
+          { id: "18b8d040b47-layer-46", setter: setDepression },
+          { id: "18f08a70745-layer-246", setter: setRace },
+          { id: "18b8d040b48-layer-47", setter: setDiabetes },
+          { id: "18e76a08700-layer-201", setter: setDisability },
+          { id: "18e74a228f5-layer-126", setter: setEnglishSecondLanguage },
+          { id: "18f8d0f38be-layer-268", setter: setFarmersMarkets },
+          { id: "18f2b1319c2-layer-262", setter: setFoodDeserts },
+          { id: "18dd297ab94-layer-64", setter: setFoodInsecurity },
+          { id: "189bf2bdaf4-layer-41", setter: setFoodPantry },
+          { id: "18f8d0f44e4-layer-269", setter: setFoodSwamps },
+          { id: "18e76c54d63-layer-214", setter: setHealthInsurance },
+          { id: "18c5fdaed43-layer-63", setter: setHealthyPlacesIndex },
+          { id: "18b8d040b46-layer-45", setter: setHeartDisease },
+          { id: "18f032a898b-layer-261", setter: setHispanic },
+          { id: "18e74a228f4-layer-125", setter: setHouseholdSize },
+          { id: "18e7683555d-layer-195", setter: setImmigrationStatus },
+          { id: "18e7404d4be-layer-79", setter: setIncome },
+          { id: "18b8d040b48-layer-48", setter: setObesity },
+          { id: "18f99cdd09a-layer-274", setter: setParks },
+          { id: "18707320ad8-layer-43", setter: setParksAndGardens },
+          { id: "18df1be9f78-layer-66", setter: setPoverty },
+          { id: "LMS_Data_Public_2415", setter: setPublicElementarySchools },
+          { id: "LMS_Data_Public_8480", setter: setPublicHighSchools },
+          { id: "LMS_Data_Public_2784", setter: setPublicMiddleSchools },
+          { id: "18e9b33a046-layer-130", setter: setRedlining },
+          { id: "18ba2205ac5-layer-54", setter: setRestaurants },
+          { id: "18ba223bf16-layer-53", setter: setRetailFoodMarkets },
+          { id: "18f08ad03dc-layer-255", setter: setSocialVulnerabilityIndex },
+          {
+            id: "18e765e956c-layer-139",
+            setter: setVehicleOwnershipLandowners,
+          },
+          { id: "18e765e956d-layer-140", setter: setVehicleOwnershipRenters },
+          { id: "18f7a6abc76-layer-268", setter: setWicFoodRetailer },
+        ];
 
-        const retailFoodOutlets = LACountyWebMap.layers.getItemAt(
-          5
-        ) as GroupLayer;
-        retailFoodOutlets.load().then(() => {
-          const restaurants_GroupLayer = retailFoodOutlets.layers.getItemAt(
-            4
-          ) as GroupLayer;
-          restaurants_GroupLayer.load().then(() => {
-            loadAndSetLayer(restaurants_GroupLayer, 4, setRestaurants); // Adjust if more layers need to be loaded
-          });
-
-          const retailFoodMarkets_GroupLayer =
-            retailFoodOutlets.layers.getItemAt(3) as GroupLayer;
-          retailFoodMarkets_GroupLayer.load().then(() => {
-            loadAndSetLayer(
-              retailFoodMarkets_GroupLayer,
-              4,
-              setRetailFoodMarkets
-            ); // Adjust if more layers need to be loaded
-          });
-
-          const foodDeserts_GroupLayer = retailFoodOutlets.layers.getItemAt(
-            1
-          ) as GroupLayer;
-          foodDeserts_GroupLayer.load().then(() => {
-            loadAndSetLayer(foodDeserts_GroupLayer, 0, setFoodDeserts);
-          });
-
-          loadAndSetLayer(retailFoodOutlets, 2, setFarmersMarkets); // Loading directly as it's a feature layer
-          loadAndSetLayer(retailFoodOutlets, 0, setFoodSwamps);
-        });
-
-        const residentHealth_GroupLayer = LACountyWebMap.layers.getItemAt(
-          4
-        ) as GroupLayer;
-        residentHealth_GroupLayer.load().then(() => {
-          const depression_GroupLayer =
-            residentHealth_GroupLayer.layers.getItemAt(0) as GroupLayer;
-          depression_GroupLayer.load().then(() => {
-            loadAndSetLayer(depression_GroupLayer, 2, setDepression);
-          });
-          const heartDisease_GroupLayer =
-            residentHealth_GroupLayer.layers.getItemAt(1) as GroupLayer;
-          heartDisease_GroupLayer.load().then(() => {
-            loadAndSetLayer(heartDisease_GroupLayer, 3, setHeartDisease);
-          });
-          const diabetes_GroupLayer =
-            residentHealth_GroupLayer.layers.getItemAt(2) as GroupLayer;
-          diabetes_GroupLayer.load().then(() => {
-            loadAndSetLayer(diabetes_GroupLayer, 3, setDiabetes);
-          });
-
-          const obesity_GroupLayer = residentHealth_GroupLayer.layers.getItemAt(
-            3
-          ) as GroupLayer;
-          obesity_GroupLayer.load().then(() => {
-            loadAndSetLayer(obesity_GroupLayer, 3, setObesity);
-          });
-
-          // Asynchronously load each layer in the Resident Health Group and set their respective states
-          loadAndSetLayer(residentHealth_GroupLayer, 4, setFoodInsecurity);
-        });
-
-        const demographics = LACountyWebMap.layers.getItemAt(3) as GroupLayer;
-        demographics.load().then(() => {
-          const race_GroupLayer = demographics.layers.getItemAt(
-            7
-          ) as GroupLayer;
-          race_GroupLayer.load().then(() => {
-            const nothispanic2022_GroupLayer = race_GroupLayer.layers.getItemAt(
-              10
-            ) as GroupLayer;
-            nothispanic2022_GroupLayer.load().then(() => {
-              loadAndSetLayer(nothispanic2022_GroupLayer, 0, setRace);
-            });
-          });
-
-          const age_GroupLayer = demographics.layers.getItemAt(4) as GroupLayer;
-          age_GroupLayer.load().then(() => {
-            const age2022_GroupLayer = age_GroupLayer.layers.getItemAt(
-              5
-            ) as GroupLayer;
-            age2022_GroupLayer.load().then(() => {
-              loadAndSetLayer(age2022_GroupLayer, 1, setAge);
-            });
-          });
-          const vehicleOwnership_GroupLayer = demographics.layers.getItemAt(
-            3
-          ) as GroupLayer;
-
-          vehicleOwnership_GroupLayer.load().then(() => {
-            const vehicleOwnershipLandowners_GroupLayer =
-              vehicleOwnership_GroupLayer.layers.getItemAt(0) as GroupLayer;
-            vehicleOwnershipLandowners_GroupLayer.load().then(() => {
-              loadAndSetLayer(
-                vehicleOwnershipLandowners_GroupLayer,
-                5,
-                setVehicleOwnershipLandowners
-              );
-            });
-            const vehicleOwnershipRenters_GroupLayer =
-              vehicleOwnership_GroupLayer.layers.getItemAt(1) as GroupLayer;
-            vehicleOwnershipRenters_GroupLayer.load().then(() => {
-              loadAndSetLayer(
-                vehicleOwnershipRenters_GroupLayer,
-                5,
-                setVehicleOwnershipRenters
-              );
-            });
-          });
-          // Process each group layer within demographics and load their respective layers
-          const groupsToLoad = [
-            { groupIndex: 10, layerIndex: 5, setter: setIncome },
-            { groupIndex: 9, layerIndex: 5, setter: setPoverty },
-            { groupIndex: 8, layerIndex: 5, setter: setHispanic },
-            { groupIndex: 6, layerIndex: 5, setter: setEnglishSecondLanguage },
-            { groupIndex: 5, layerIndex: 5, setter: setImmigrationStatus },
-            { groupIndex: 2, layerIndex: 5, setter: setHouseholdSize },
-            { groupIndex: 1, layerIndex: 5, setter: setDisability },
-            { groupIndex: 0, layerIndex: 6, setter: setHealthInsurance },
-          ];
-
-          groupsToLoad.forEach(({ groupIndex, layerIndex, setter }) => {
-            const groupLayer = demographics.layers.getItemAt(
-              groupIndex
-            ) as GroupLayer;
-            groupLayer
-              .load()
-              .then(() => {
-                loadAndSetLayer(groupLayer, layerIndex, setter);
-              })
-              .catch((error) => {
-                console.error(
-                  `Error loading group layer at index ${groupIndex}:`,
-                  error
-                );
-              });
-          });
-        });
-
-        const neighborhoodCharacteristics_GroupLayer =
-          LACountyWebMap.layers.getItemAt(2) as GroupLayer;
-        neighborhoodCharacteristics_GroupLayer.load().then(() => {
-          // Load each feature layer within the neighborhood characteristics group
-          loadAndSetLayer(
-            neighborhoodCharacteristics_GroupLayer,
-            2,
-            setHealthyPlacesIndex
-          );
-          loadAndSetLayer(
-            neighborhoodCharacteristics_GroupLayer,
-            1,
-            setSocialVulnerabilityIndex
-          );
-          loadAndSetLayer(
-            neighborhoodCharacteristics_GroupLayer,
-            0,
-            setRedlining
-          );
-        });
-
-        const greenAndGardenSpaces = LACountyWebMap.layers.getItemAt(
-          1
-        ) as GroupLayer;
-        greenAndGardenSpaces.load().then(() => {
-          // Load each feature layer within the Green and Garden Spaces group
-          loadAndSetLayer(greenAndGardenSpaces, 2, setCommunityGardens);
-          loadAndSetLayer(greenAndGardenSpaces, 1, setParks);
-          loadAndSetLayer(greenAndGardenSpaces, 0, setParksAndGardens);
-        });
-
-        const schools = LACountyWebMap.layers.getItemAt(0) as GroupLayer;
-        schools.load().then(() => {
-          // Load each feature layer within the Schools group
-          loadAndSetLayer(schools, 2, setPublicElementarySchools);
-          loadAndSetLayer(schools, 1, setPublicMiddleSchools);
-          loadAndSetLayer(schools, 0, setPublicHighSchools);
+        // Load and set each layer based on its unique ID
+        layerConfigs.forEach(({ id, setter }) => {
+          const layer = LACountyWebMap.findLayerById(id);
+          if (layer) {
+            loadAndSetLayer(layer, setter);
+          } else {
+            console.error(`Layer with ID ${id} not found in the web map`);
+          }
         });
       })
       .catch((error) => {
@@ -1558,7 +1406,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       generateTestPDF(globalLegendData).then(() => {
         progressCtrRef.current += 1;
         if (progressCtrRef.current === slideCtrRef.current) {
-          setPdfGenerationComplete(true);
           setIsLoadingReport(false);
 
           handleCloseReport();
@@ -1581,7 +1428,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     const screenshots = [];
 
     setShowPDFPane(true);
-    setPdfGenerationComplete(false);
     setIsLoadingReport(true);
 
     // Initialize the map view
