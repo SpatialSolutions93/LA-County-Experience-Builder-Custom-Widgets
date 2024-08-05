@@ -1,5 +1,10 @@
-import { React, DataSourceComponent, AllWidgetProps } from "jimu-core";
-import type { DataSource } from "jimu-core";
+import {
+  React,
+  DataSourceComponent,
+  AllWidgetProps,
+  DataSource,
+} from "jimu-core";
+import { JimuMapViewComponent } from "jimu-arcgis";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import WebMap from "@arcgis/core/WebMap";
@@ -7,11 +12,20 @@ import MapView from "@arcgis/core/views/MapView";
 import Extent from "@arcgis/core/geometry/Extent.js";
 import Graphic from "@arcgis/core/Graphic";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
+import Sketch from "@arcgis/core/widgets/Sketch.js";
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
+import serviceArea from "@arcgis/core/rest/serviceArea";
+import ServiceAreaParameters from "@arcgis/core/rest/support/ServiceAreaParameters";
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
+import esriConfig from "@arcgis/core/config";
+import OAuthInfo from "@arcgis/core/identity/OAuthInfo";
+import IdentityManager from "@arcgis/core/identity/IdentityManager";
+import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol.js";
+
 import "./widgetStyles.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import * as Logos from "../logos";
-import { generateLegendItems } from "./utils/legendUtils";
 import {
   customButtonStyle,
   customContainerStyle,
@@ -26,24 +40,13 @@ import {
   dropdownStyle,
   customPdfCloseButton,
   customPdfCloseButtonHover,
-} from "./utils/customStyles";
-import {
+  generateLegendItems,
   useDatasetChangeHandler,
   handleDropdownChange,
-} from "./utils/formLogic";
-import {
   createMask,
   filterPointsWithinPolygon,
   getPointsInsideFeature,
-} from "./utils/geospatialProcessing";
-import { JimuMapViewComponent } from "jimu-arcgis";
-import Sketch from "@arcgis/core/widgets/Sketch.js";
-import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
-import serviceArea from "@arcgis/core/rest/serviceArea";
-import ServiceAreaParameters from "@arcgis/core/rest/support/ServiceAreaParameters";
-import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
-import esriConfig from "@arcgis/core/config";
-import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol.js";
+} from "./utils";
 
 const { useRef, useState, useEffect } = React;
 
@@ -73,6 +76,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [showPDFPane, setShowPDFPane] = useState(false);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [imageDimensions, setImageDimensions] = useState(null);
+  const [pdfGenerationComplete, setPdfGenerationComplete] = useState(false);
   const [boundaryType, setBoundaryType] = useState<string | null>(null);
   const [useCaseType, setUseCaseType] = useState("");
   const [UseLabelColor, setUseLabelColor] = useState("black"); // Default color
@@ -155,6 +159,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [globalSymbol, setGlobalSymbol] = React.useState<Record<string, any>>(
     {}
   );
+  const pointsInsideFeatureCountRef = React.useRef(null);
   const [usingCustomBoundary, setUsingCustomBoundary] = React.useState(false);
   const [usingNetworkBoundary, setUsingNetworkBoundary] = React.useState(false); // FOCUS FOCUS 2
   const [isHovered, setIsHovered] = useState(false);
@@ -163,11 +168,14 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [jimuMapView, setJimuMapView] = useState(null);
   const [sketchWidget, setSketchWidget] = useState(null);
   const [networkPoint, setNetworkPoint] = useState(null); // FOCUS FOCUS 6
+  const [networkPolygon, setNetworkPolygon] = useState(null); // FOCUS FOCUS 7
+  const [sketchLayer, setSketchLayer] = useState(null);
   const [lastGraphicGeometry, setLastGraphicGeometry] = useState(null); // State to hold the geometry
   const [customBoundarySelected, setCustomBoundarySelected] = useState(false);
   const [isBoundaryConfirmed, setIsBoundaryConfirmed] = useState(false);
   const [lastNetworkPoint, setLastNetworkPoint] = useState(null);
   const [lastSelectedType, setLastSelectedType] = useState(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   let pointCounts = []; // Array to store point counts
 
@@ -237,9 +245,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         // Add the new point after creation is complete
         layer.add(event.graphic);
         setLastNetworkPoint(event.graphic.geometry);
-        console.log("Last Network Point: ", event.graphic);
-        console.log("Last Network Point Geometry: ", event.graphic.geometry);
-        console.log("Last Network Point Value: ", lastNetworkPoint);
         createServiceArea(event.graphic.geometry, view);
       }
     });
@@ -248,14 +253,103 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     setNetworkPoint(sketch);
   };
 
-  useEffect(() => {
-    console.log("Updated Last Network Point Value: ", lastNetworkPoint);
-  }, [lastNetworkPoint]); // This useEffect runs whenever lastNetworkPoint changes
+  /*   useEffect(() => {
+    const clientId = process.env.REACT_APP_ARCGIS_CLIENT_ID;
+
+    if (!clientId) {
+      console.error("Client ID is not defined in the environment variables.");
+      return;
+    }
+
+    // OAuth setup
+    const info = new OAuthInfo({
+      appId: clientId,
+      popup: false, // Display a pop-up window for OAuth sign-in. Set to true if you want a popup.
+    });
+    IdentityManager.registerOAuthInfos([info]);
+
+    IdentityManager.checkSignInStatus(info.portalUrl + "/sharing")
+      .then((credential) => {
+        setAccessToken(credential.token);
+      })
+      .catch(() => {
+        IdentityManager.getCredential(info.portalUrl + "/sharing").then(
+          (credential) => {
+            setAccessToken(credential.token);
+          }
+        );
+      });
+  }, []); 
+   function createServiceArea(point, view) {
+    if (!accessToken) {
+      console.error("Access token is not available");
+      return;
+    }
+
+    let markerSymbol = {
+      type: "simple-marker",
+      color: [255, 255, 255], // White marker
+      size: 8,
+    };
+    const locationGraphic = new Graphic({
+      geometry: point,
+      symbol: markerSymbol,
+    });
+
+    const driveTimeCutoffs = [10]; // Minutes
+
+    const serviceAreaParams = new ServiceAreaParameters({
+      facilities: new FeatureSet({
+        features: [locationGraphic],
+      }),
+      defaultBreaks: driveTimeCutoffs,
+      outSpatialReference: view.spatialReference,
+      trimOuterPolygon: true,
+    });
+
+    const serviceAreaUrl =
+      "https://route-api.arcgis.com/arcgis/rest/services/World/ServiceAreas/NAServer/ServiceArea_World/solveServiceArea";
+
+    // Temporarily override the token in esriConfig for this request
+    esriConfig.request.interceptors.push({
+      urls: serviceAreaUrl,
+      before: function (params) {
+        params.requestOptions.query.token = accessToken;
+        return params;
+      },
+      after: function () {
+        esriConfig.request.interceptors.pop();
+      },
+    });
+
+    serviceArea
+      .solve(serviceAreaUrl, serviceAreaParams)
+      .then((result) => {
+        view.graphics.removeAll();
+        result.serviceAreaPolygons.features.forEach((feature) => {
+          const fillSymbol = new SimpleFillSymbol({
+            color: [255, 50, 50, 0.25], // Semi-transparent red
+            style: "solid",
+            outline: {
+              color: [255, 0, 0, 0.8], // Red outline
+              width: 2,
+            },
+          });
+
+          feature.symbol = fillSymbol;
+          view.graphics.add(feature);
+          setLastGraphicGeometry(feature.geometry);
+        });
+      })
+      .catch((error) => {
+        console.error("Service Area calculation failed: ", error);
+      });
+  } */ // UPDATE UPDATE USE THIS FOR DEPLOYMENT, SETUP ENV VARIABLES
 
   function createServiceArea(point, view) {
     // Set your API key
     esriConfig.apiKey =
-      "3NKHt6i2urmWtqOuugvr9acZPaeoYh1EokytZHG0KkLFVSCACYpOqcDJ7y03Kqbi9i5nkuETNtxpWYO8-w31qcoUj_31OC5DGcnQ8Nkz6zT21XZNOMrKUVDO6YiHXfqW"; // UPDATE UPDATE
+      "3NKHt6i2urmWtqOuugvr9TZlSOGrCkqK87RC8a3UuXn8POT-aNCngKIQwTo_9xedN6OzUbaVdxUSLIyBbDnVdwtY818dP8YnuNhyok11op-TjHqAjC7_1rJnfdCp7w21"; // UPDATE UPDATE
 
     let markerSymbol = {
       type: "simple-marker",
@@ -296,7 +390,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
           feature.symbol = fillSymbol;
           view.graphics.add(feature);
-
           setLastGraphicGeometry(feature.geometry);
         });
       })
@@ -1553,9 +1646,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
 
         if (lastSelectedType === "Network" && lastNetworkPoint) {
-          console.log("Adding network point to map");
-          console.log("Final Last Network Point: ", lastNetworkPoint);
-
           // Create a new GraphicsLayer
           const graphicsLayerNetwork = new GraphicsLayer();
 
@@ -1580,20 +1670,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           // Add the graphic to the graphics layer
           graphicsLayerNetwork.add(networkPointGraphic);
 
-          console.log(
-            "Final Last Network Point Geometry: ",
-            lastNetworkPoint.toJSON()
-          );
-
           if (!mapViewRef2.current || !mapViewRef2.current.ready) {
-            console.log("MapView is not ready.");
             return;
           }
-
-          console.log(
-            "Graphics Layer Count Before Addition: ",
-            mapViewRef2.current.map.layers.length
-          );
 
           // Add the graphics layer to the map property of the mapView
           try {
@@ -1601,11 +1680,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
           } catch (error) {
             console.error("Error adding graphics layer to map:", error);
           }
-
-          console.log(
-            "Graphics Layer Count After Addition: ",
-            mapViewRef2.current.map.layers.length
-          );
         }
 
         const count = await getPointsInsideFeature(datasetId, layerViews);
@@ -1655,11 +1729,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     setBoundaryType(selectedType);
 
     // Check if the selected type is 'Custom'
-    if (selectedType === "Custom") {
-      console.log("Custom boundary selected.");
-    } else if (selectedType === "Network") {
-      console.log("Network boundary selected."); // FOCUS FOCUS 3
-    } else {
+    if (selectedType != "Custom" && selectedType != "Network") {
       // Proceed with default handling if not 'Custom'
       handleDropdownChange(
         event,
