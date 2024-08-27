@@ -349,7 +349,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   function createServiceArea(point, view) {
     // Set your API key
     esriConfig.apiKey =
-      "3NKHt6i2urmWtqOuugvr9TZlSOGrCkqK87RC8a3UuXn8POT-aNCngKIQwTo_9xedN6OzUbaVdxUSLIyBbDnVdwtY818dP8YnuNhyok11op-TjHqAjC7_1rJnfdCp7w21"; // UPDATE UPDATE REMOVE TEMP KEY AND AUTO CLIENT METHOD
+      "3NKHt6i2urmWtqOuugvr9TZlSOGrCkqK87RC8a3UuXn8POT-aNCngKIQwTo_9xedN6OzUbaVdxUSLIyBbDnVdwtY818dP8YnuNhyok11op-TjHqAjC7_1rJnfdCp7w21"; // UPDATE UPDATE
 
     let markerSymbol = {
       type: "simple-marker",
@@ -570,7 +570,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     { id: 24, name: "Obesity", dataSource: obesity },
     { id: 25, name: "Parks", dataSource: parks },
     { id: 26, name: "Parks and Gardens", dataSource: parksAndGardens },
-    { id: 27, name: "Poverty", dataSource: poverty },
+    { id: 27, name: "Poverty", dataSource: poverty }, // NEW
     {
       id: 28,
       name: "Public Elementary Schools",
@@ -653,7 +653,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     City: "CITY_NAME",
     "Countywide Statistical Area (CSA)": "LABEL",
     "Census Tract": "CT20",
-    "LA City Council Districts": "DISTRICT",
+    "LA City Council Districts": "NAME",
     "Service Planning Area (SPA)": "SPA_NAME",
     "Supervisor District": "LABEL",
   };
@@ -708,7 +708,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     } else if (boundaryType === "LA City Council Districts") {
       LACityCouncilDistricts.queryFeatures().then((featureSet) => {
         setCityCouncilDistrictsList(
-          sortByAttribute(featureSet.features, "DISTRICT")
+          sortByAttribute(featureSet.features, "NAME")
         );
         setIsFetchingData(false);
       });
@@ -1124,7 +1124,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             lineColor: "#4472C4",
           },
         ],
-        margin: [0, -170, 0, 220],
+        margin: [0, 40, 0, 220], // Added 40 units of top margin to push it down
       };
 
       let textGroup;
@@ -1146,7 +1146,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 style: "bodyText",
               },
             ],
-            margin: [0, -183, 0, 0], // Adjust this margin to move the entire group up by 200 units
+            margin: [0, -143, 0, 0], // Adjusted top margin to push it down
           };
         } else if (datasetName === "Food Insecurity") {
           textGroup = {
@@ -1156,7 +1156,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 style: "bodyText",
               },
             ],
-            margin: [0, -183, 0, 0],
+            margin: [0, -143, 0, 0], // Adjusted top margin to push it down
           };
         } else if (datasetName === "Diabetes") {
           textGroup = {
@@ -1166,7 +1166,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 style: "bodyText",
               },
             ],
-            margin: [0, -183, 0, 0],
+            margin: [0, -143, 0, 0], // Adjusted top margin to push it down
           };
         } else if (datasetName === "Vehicle Ownership (Landowners)") {
           textGroup = {
@@ -1176,7 +1176,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 style: "bodyText",
               },
             ],
-            margin: [0, -183, 0, 0],
+            margin: [0, -143, 0, 0], // Adjusted top margin to push it down
           };
         } else if (datasetName === "Redlining") {
           textGroup = {
@@ -1186,7 +1186,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                 style: "bodyText",
               },
             ],
-            margin: [0, -183, 0, 0],
+            margin: [0, -143, 0, 0], // Adjusted top margin to push it down
           };
         }
       } else {
@@ -1205,192 +1205,133 @@ export default function Widget(props: AllWidgetProps<unknown>) {
               style: "bodyText",
             },
           ],
-          margin: [0, -183, 0, 0],
+          margin: [0, -143, 0, 0], // Adjusted top margin to push it down
         };
       }
 
-      // Fetches data from Google Sheets
-      function fetchDataFromGoogleSheet(datasetName) {
-        console.log("Dataset name: ", datasetName);
-        const sheetId = "1X7d9su2_LpY6xqg1ZDjs7koFPu_6wnkXCiepl5d20iY";
-        const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
-
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/AboutTheLayersUpdateCurrent?key=${apiKey}`;
-
-        return fetch(url)
-          .then((response) => response.json())
-          .then((data) => {
-            console.log("Data from Google Sheets: ", data);
-
-            // Assuming that the first row in the sheet contains headers
-            const headers = data.values[0];
-            const codeNameIndex = headers.indexOf("CodeNameReference");
-            const codeDescriptionIndex = headers.indexOf(
-              "CodeDescriptionReference"
-            );
-
-            if (codeNameIndex === -1 || codeDescriptionIndex === -1) {
-              throw new Error("Required columns not found in the sheet");
-            }
-
-            // Find the row where CodeNameReference matches the datasetName
-            const matchingRow = data.values.find(
-              (row) => row[codeNameIndex] === datasetName
-            );
-
-            if (matchingRow) {
-              // Return the value from the CodeDescriptionReference column
-              return matchingRow[codeDescriptionIndex];
-            } else {
-              console.warn("No matching dataset name found in the sheet.");
-              return "";
-            }
-          })
-          .catch((error) => {
-            console.error("Error fetching data from Google Sheets:", error);
-            return "";
-          });
-      }
-
-      // Generate the layer description asynchronously and then continue with the slide generation
-      return fetchDataFromGoogleSheet(datasetName).then((textFromSheet) => {
-        const layerDescription = {
-          stack: [
-            {
-              text: textFromSheet,
-              fontSize: 30,
-              style: "bodyText",
-            },
-          ],
-          margin: [0, 190, 0, 0],
-        };
-
-        const headerWithRectangles = {
-          stack: [
-            {
-              canvas: [
-                {
-                  type: "rect",
-                  x: -82,
-                  y: 10,
-                  w: 30,
-                  h: 120,
-                  color: "#FFCC00",
-                },
-                {
-                  type: "rect",
-                  x: -104,
-                  y: 10,
-                  w: 10,
-                  h: 120,
-                  color: "#FFCC00",
-                },
-              ],
-            },
-            {
-              text: datasetName,
-              style: "header",
-              margin: [-10, -100, -2000, -200],
-              alignment: "left",
-            },
-          ],
-          margin: [0, 0, 0, 20],
-        };
-
-        const legendDataForDataset = globalLegendData[datasetId] || [];
-        const currentSymbolType = globalSymbol[datasetId] || "no-symbol";
-        let legendItems = generateLegendItems(
-          legendDataForDataset,
-          currentSymbolType
-        );
-
-        const legendColumns = [];
-        for (let i = 0; i < legendItems.length; i += 2) {
-          const column = {
-            stack: legendItems.slice(i, i + 2),
-            margin: [0, 0, 0, 5],
-          };
-          legendColumns.push(column);
-        }
-
-        const legendRow = {
-          columns: legendColumns.map((column) => ({
-            ...column,
-            width: "auto",
-          })),
-          columnGap: 30,
-        };
-
-        legendColumns.forEach((column) => {
-          column.width = "auto";
-        });
-
-        // Start with the initial parts of the statistics that are always included
-        let statistics = [
-          headerWithRectangles,
-          layerDescription,
-          coloredLine,
-          textGroup,
+      const headerWithRectangles = {
+        stack: [
           {
-            columns: [
+            canvas: [
               {
-                image: Logos.LACounty_logo,
-                height: 250,
-                width: 250,
-                absolutePosition: { x: 20, y: 810 },
+                type: "rect",
+                x: -82,
+                y: 40, // Starting position
+                w: 30,
+                h: 120,
+                color: "#FFCC00",
               },
               {
-                image: Logos.USC_logo,
-                height: 150,
-                width: 365,
-                absolutePosition: { x: 270, y: 928 },
+                type: "rect",
+                x: -104,
+                y: 40, // Adjust based on the desired space between the rectangles
+                w: 10,
+                h: 120,
+                color: "#FFCC00",
               },
             ],
           },
-        ];
+          {
+            text: datasetName,
+            style: "header",
+            margin: [65, -100, -2000, -200],
+            alignment: "left",
+          }, // Adjust the margin as per your requirements for fine-tuning
+        ],
+        margin: [0, 0, 0, 20],
+      };
 
-        if (currentSymbolType !== "no-symbol") {
-          statistics.push({
-            columns: [
-              {
-                text: "Legend",
-                fontSize: 48,
-                bold: true,
-                absolutePosition: { x: 920, y: 878 },
-              },
-              {
-                stack: [
-                  {
-                    text: "Legend",
-                    fontSize: 48,
-                    bold: true,
-                    absolutePosition: { x: 920, y: 878 },
-                  },
-                  legendRow,
-                ],
-                absolutePosition: { x: 920, y: 945 },
-              },
-            ],
-          });
-        }
+      const legendDataForDataset = globalLegendData[datasetId] || [];
+      const currentSymbolType = globalSymbol[datasetId] || "no-symbol"; // Use a default/fallback symbol type if needed
+      let legendItems = generateLegendItems(
+        legendDataForDataset,
+        currentSymbolType
+      );
 
-        return {
-          table: {
-            widths: ["50%", "60%"],
-            heights: [canvasHeight],
-            body: [
-              [
-                {
-                  stack: statistics,
-                  margin: [65, 0],
-                },
-                "",
-              ],
-            ],
-          },
-          layout: "noBorders",
+      const legendColumns = [];
+      for (let i = 0; i < legendItems.length; i += 2) {
+        const column = {
+          stack: legendItems.slice(i, i + 2), // Get two items for the column
+          margin: [0, 0, 0, 5], // Margin between items in the column
         };
+        legendColumns.push(column);
+      }
+
+      const legendRow = {
+        columns: legendColumns.map((column) => ({
+          ...column,
+          width: "auto", // Each column only takes up the space it needs
+        })),
+        columnGap: 30, // No horizontal space between columns
+      };
+
+      legendColumns.forEach((column) => {
+        column.width = "auto"; // Set the width of the column to be automatic
       });
+
+      let statistics = [
+        headerWithRectangles,
+        { ...coloredLine, margin: [0, 20] }, // Adjusted top margin to push the line further down
+        { ...textGroup, margin: [0, 20] }, // Adjusted top margin to push the text further down
+        {
+          columns: [
+            {
+              image: Logos.LACounty_logo,
+              height: 250,
+              width: 250,
+              absolutePosition: { x: 20, y: 810 },
+            },
+            {
+              image: Logos.USC_logo,
+              height: 150,
+              width: 365,
+              absolutePosition: { x: 270, y: 928 },
+            },
+          ],
+        },
+      ];
+
+      if (currentSymbolType !== "no-symbol") {
+        statistics.push({
+          columns: [
+            {
+              text: "Legend",
+              fontSize: 48,
+              bold: true,
+              absolutePosition: { x: 920, y: 878 },
+            },
+            {
+              stack: [
+                {
+                  text: "Legend",
+                  fontSize: 48,
+                  bold: true,
+                  absolutePosition: { x: 920, y: 878 },
+                },
+                legendRow,
+              ],
+              absolutePosition: { x: 920, y: 945 },
+            },
+          ],
+        });
+      }
+
+      return {
+        table: {
+          widths: ["50%", "60%"],
+          heights: [canvasHeight],
+          body: [
+            [
+              {
+                stack: statistics,
+                margin: [65, 40], // Adjusted top margin to push everything down
+              },
+              "",
+            ],
+          ],
+        },
+        layout: "noBorders",
+      };
     }
 
     let dynamicSlides = [];
@@ -1400,7 +1341,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       const datasetName = getDatasetName(datasetId);
       const pointCount = pointCounts[i]; // Get the specific point count for this dataset
       dynamicSlides.push(
-        await generateSlideForDataset(datasetId, datasetName, pointCount)
+        generateSlideForDataset(datasetId, datasetName, pointCount)
       );
     }
 
@@ -2262,7 +2203,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
                   {boundaryType === "LA City Council Districts" &&
                     cityCouncilDistrictsList.map((record, i) => (
                       <option key={i} value={i}>
-                        {record.attributes["DISTRICT"] || "Unnamed"}
+                        {record.attributes["NAME"] || "Unnamed"}
                       </option>
                     ))}
 
