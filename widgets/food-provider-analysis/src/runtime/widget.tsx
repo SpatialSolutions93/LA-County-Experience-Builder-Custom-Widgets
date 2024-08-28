@@ -46,6 +46,11 @@ import {
   createMask,
   filterPointsWithinPolygon,
   getPointsInsideFeature,
+  handleSketchWidget,
+  removeSketchWidget,
+  handleNetworkPoint,
+  removeNetworkPoint,
+  createServiceArea,
 } from "./utils";
 
 const { useRef, useState, useEffect } = React;
@@ -76,7 +81,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [showPDFPane, setShowPDFPane] = useState(false);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [imageDimensions, setImageDimensions] = useState(null);
-  const [pdfGenerationComplete, setPdfGenerationComplete] = useState(false);
   const [boundaryType, setBoundaryType] = useState<string | null>(null);
   const [useCaseType, setUseCaseType] = useState("");
   const [UseLabelColor, setUseLabelColor] = useState("black"); // Default color
@@ -159,298 +163,53 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [globalSymbol, setGlobalSymbol] = React.useState<Record<string, any>>(
     {}
   );
-  const pointsInsideFeatureCountRef = React.useRef(null);
   const [usingCustomBoundary, setUsingCustomBoundary] = React.useState(false);
   const [usingNetworkBoundary, setUsingNetworkBoundary] = React.useState(false); // FOCUS FOCUS 2
   const [isHovered, setIsHovered] = useState(false);
   const [isHoveredUseCase, setIsHoveredUseCase] = useState(false);
   const [isHoveredReport, setIsHoveredReport] = useState(false);
   const [jimuMapView, setJimuMapView] = useState(null);
-  const [sketchWidget, setSketchWidget] = useState(null);
-  const [networkPoint, setNetworkPoint] = useState(null); // FOCUS FOCUS 6
-  const [networkPolygon, setNetworkPolygon] = useState(null); // FOCUS FOCUS 7
-  const [sketchLayer, setSketchLayer] = useState(null);
   const [lastGraphicGeometry, setLastGraphicGeometry] = useState(null); // State to hold the geometry
   const [customBoundarySelected, setCustomBoundarySelected] = useState(false);
   const [isBoundaryConfirmed, setIsBoundaryConfirmed] = useState(false);
   const [lastNetworkPoint, setLastNetworkPoint] = useState(null);
   const [lastSelectedType, setLastSelectedType] = useState(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-
-  let pointCounts = []; // Array to store point counts
-
-  const handleSketchWidget = (jimuMapView) => {
-    if (!jimuMapView || !jimuMapView.view) return;
-
-    // Remove any existing sketch widget
-    removeSketchWidget(jimuMapView);
-
-    // Create a new GraphicsLayer for the Sketch widget
-    const newSketchLayer = new GraphicsLayer({
-      title: "Custom Boundary", // Assign a meaningful name here
-    });
-    jimuMapView.view.map.add(newSketchLayer); // Adding directly to the map object
-
-    // Setup the Sketch widget
-    setupSketchWidget(newSketchLayer, jimuMapView.view);
-  };
-
-  const handleNetworkPoint = (jimuMapView) => {
-    if (!jimuMapView || !jimuMapView.view) return;
-
-    // Remove any existing sketch widget
-    removeNetworkPoint(jimuMapView);
-
-    // Create a new GraphicsLayer for the Sketch widget and set its name
-    const newNetworkLayer = new GraphicsLayer({
-      title: "Network Start Point", // Assign a meaningful name here
-    });
-    jimuMapView.view.map.add(newNetworkLayer); // Adding directly to the map object
-
-    // Setup the Sketch widget
-    setupNetworkPoint(newNetworkLayer, jimuMapView.view); // FOCUS FOCUS 5
-  };
-
-  const setupSketchWidget = (layer, view) => {
-    const sketch = new Sketch({
-      layer: layer,
-      view: view,
-      availableCreateTools: ["polygon", "rectangle"],
-    });
-
-    sketch.on("create", (event) => {
-      if (event.state === "complete") {
-        layer.removeAll();
-        layer.add(event.graphic);
-        setLastGraphicGeometry(event.graphic.geometry);
-      }
-    });
-
-    view.ui.add(sketch, "bottom-right");
-    setSketchWidget(sketch);
-  };
-
-  const setupNetworkPoint = (layer, view) => {
-    const sketch = new Sketch({
-      layer: layer,
-      view: view,
-      availableCreateTools: ["point"],
-    });
-
-    sketch.on("create", (event) => {
-      if (event.state === "start") {
-        // Clear the layer when starting to draw a new point
-        layer.removeAll();
-      } else if (event.state === "complete") {
-        // Add the new point after creation is complete
-        layer.add(event.graphic);
-        setLastNetworkPoint(event.graphic.geometry);
-        createServiceArea(event.graphic.geometry, view);
-      }
-    });
-
-    view.ui.add(sketch, "bottom-right");
-    setNetworkPoint(sketch);
-  };
-
-  /*   useEffect(() => {
-    const clientId = process.env.REACT_APP_ARCGIS_CLIENT_ID;
-
-    if (!clientId) {
-      console.error("Client ID is not defined in the environment variables.");
-      return;
-    }
-
-    // OAuth setup
-    const info = new OAuthInfo({
-      appId: clientId,
-      popup: false, // Display a pop-up window for OAuth sign-in. Set to true if you want a popup.
-    });
-    IdentityManager.registerOAuthInfos([info]);
-
-    IdentityManager.checkSignInStatus(info.portalUrl + "/sharing")
-      .then((credential) => {
-        setAccessToken(credential.token);
-      })
-      .catch(() => {
-        IdentityManager.getCredential(info.portalUrl + "/sharing").then(
-          (credential) => {
-            setAccessToken(credential.token);
-          }
-        );
-      });
-  }, []); 
-   function createServiceArea(point, view) {
-    if (!accessToken) {
-      console.error("Access token is not available");
-      return;
-    }
-
-    let markerSymbol = {
-      type: "simple-marker",
-      color: [255, 255, 255], // White marker
-      size: 8,
-    };
-    const locationGraphic = new Graphic({
-      geometry: point,
-      symbol: markerSymbol,
-    });
-
-    const driveTimeCutoffs = [10]; // Minutes
-
-    const serviceAreaParams = new ServiceAreaParameters({
-      facilities: new FeatureSet({
-        features: [locationGraphic],
-      }),
-      defaultBreaks: driveTimeCutoffs,
-      outSpatialReference: view.spatialReference,
-      trimOuterPolygon: true,
-    });
-
-    const serviceAreaUrl =
-      "https://route-api.arcgis.com/arcgis/rest/services/World/ServiceAreas/NAServer/ServiceArea_World/solveServiceArea";
-
-    // Temporarily override the token in esriConfig for this request
-    esriConfig.request.interceptors.push({
-      urls: serviceAreaUrl,
-      before: function (params) {
-        params.requestOptions.query.token = accessToken;
-        return params;
-      },
-      after: function () {
-        esriConfig.request.interceptors.pop();
-      },
-    });
-
-    serviceArea
-      .solve(serviceAreaUrl, serviceAreaParams)
-      .then((result) => {
-        view.graphics.removeAll();
-        result.serviceAreaPolygons.features.forEach((feature) => {
-          const fillSymbol = new SimpleFillSymbol({
-            color: [255, 50, 50, 0.25], // Semi-transparent red
-            style: "solid",
-            outline: {
-              color: [255, 0, 0, 0.8], // Red outline
-              width: 2,
-            },
-          });
-
-          feature.symbol = fillSymbol;
-          view.graphics.add(feature);
-          setLastGraphicGeometry(feature.geometry);
-        });
-      })
-      .catch((error) => {
-        console.error("Service Area calculation failed: ", error);
-      });
-  } */ // UPDATE UPDATE USE THIS FOR DEPLOYMENT, SETUP ENV VARIABLES
-
-  function createServiceArea(point, view) {
-    // Set your API key
-    esriConfig.apiKey =
-      "3NKHt6i2urmWtqOuugvr9TZlSOGrCkqK87RC8a3UuXn8POT-aNCngKIQwTo_9xedN6OzUbaVdxUSLIyBbDnVdwtY818dP8YnuNhyok11op-TjHqAjC7_1rJnfdCp7w21"; // UPDATE UPDATE REMOVE TEMP KEY AND AUTO CLIENT METHOD
-
-    let markerSymbol = {
-      type: "simple-marker",
-      color: [255, 255, 255], // White marker
-      size: 8,
-    };
-    const locationGraphic = new Graphic({
-      geometry: point,
-      symbol: markerSymbol,
-    });
-
-    const driveTimeCutoffs = [10]; // Minutes
-
-    const serviceAreaParams = new ServiceAreaParameters({
-      facilities: new FeatureSet({
-        features: [locationGraphic],
-      }),
-      defaultBreaks: driveTimeCutoffs,
-      outSpatialReference: view.spatialReference,
-      trimOuterPolygon: true,
-    });
-
-    const serviceAreaUrl =
-      "https://route-api.arcgis.com/arcgis/rest/services/World/ServiceAreas/NAServer/ServiceArea_World/solveServiceArea";
-    serviceArea
-      .solve(serviceAreaUrl, serviceAreaParams)
-      .then((result) => {
-        view.graphics.removeAll();
-        result.serviceAreaPolygons.features.forEach((feature) => {
-          const fillSymbol = new SimpleFillSymbol({
-            color: [255, 50, 50, 0.25], // Semi-transparent red
-            style: "solid",
-            outline: {
-              color: [255, 0, 0, 0.8], // Red outline
-              width: 2,
-            },
-          });
-
-          feature.symbol = fillSymbol;
-          view.graphics.add(feature);
-          setLastGraphicGeometry(feature.geometry);
-        });
-      })
-      .catch((error) => {
-        console.error("Service Area calculation failed: ", error);
-      });
-  }
-
-  const removeSketchWidget = (jimuMapView) => {
-    if (!jimuMapView || !jimuMapView.view) return;
-
-    // Assuming the sketch widget is globally or otherwise stored
-    if (sketchWidget) {
-      jimuMapView.view.ui.remove(sketchWidget);
-      sketchWidget.layer && jimuMapView.view.map.remove(sketchWidget.layer);
-      setSketchWidget(null);
-    }
-  };
-
-  const removeNetworkPoint = (jimuMapView) => {
-    if (!jimuMapView || !jimuMapView.view) return;
-
-    // Remove sketch widget
-    if (networkPoint) {
-      jimuMapView.view.ui.remove(networkPoint);
-      networkPoint.layer && jimuMapView.view.map.remove(networkPoint.layer);
-      setNetworkPoint(null);
-    }
-
-    jimuMapView.view.graphics.removeAll();
-  };
+  const [sketchWidget, setSketchWidget] = useState(null);
+  const [networkPoint, setNetworkPoint] = useState(null);
 
   useEffect(() => {
     if (usingCustomBoundary && jimuMapView) {
-      handleSketchWidget(jimuMapView);
+      handleSketchWidget(jimuMapView, setSketchWidget, setLastGraphicGeometry);
     } else if (!usingCustomBoundary && jimuMapView) {
-      removeSketchWidget(jimuMapView);
+      removeSketchWidget(jimuMapView, setSketchWidget);
     }
 
     // Cleanup function to remove the Sketch widget when the widget unmounts
     return () => {
       if (jimuMapView) {
-        removeSketchWidget(jimuMapView);
+        removeSketchWidget(jimuMapView, setSketchWidget);
       }
     };
   }, [usingCustomBoundary, jimuMapView]);
 
   useEffect(() => {
     if (usingNetworkBoundary && jimuMapView) {
-      handleNetworkPoint(jimuMapView);
+      handleNetworkPoint(
+        jimuMapView,
+        setNetworkPoint,
+        setLastNetworkPoint,
+        createServiceArea
+      );
     } else if (!usingNetworkBoundary && jimuMapView) {
-      removeNetworkPoint(jimuMapView);
+      removeNetworkPoint(jimuMapView, setNetworkPoint);
     }
 
-    // Cleanup function to remove the Sketch widget when the widget unmounts
     return () => {
       if (jimuMapView) {
-        removeNetworkPoint(jimuMapView);
+        removeNetworkPoint(jimuMapView, setNetworkPoint);
       }
     };
-  }, [usingNetworkBoundary, jimuMapView]); // FOCUS FOCUS 4
+  }, [usingNetworkBoundary, jimuMapView]);
 
   const onActiveViewChange = (jimuMapView) => {
     setJimuMapView(jimuMapView);
@@ -1111,7 +870,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     const overlap = 10; // Set the thickness of your outline
 
-    function generateSlideForDataset(datasetId, datasetName, pointCounts) {
+    function generateSlideForDataset(datasetId, datasetName) {
       const coloredLine = {
         canvas: [
           {
@@ -1193,7 +952,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         textGroup = {
           stack: [
             {
-              text: `${bullet} ${pointCounts} ${datasetName} in ${selectedFeatureName}`,
+              text: `${bullet} undefined ${datasetName} in ${selectedFeatureName}`,
               style: "bodyText",
             },
             {
@@ -1398,10 +1157,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     for (let i = 0; i < selectedDatasets.length; i++) {
       const datasetId = selectedDatasets[i];
       const datasetName = getDatasetName(datasetId);
-      const pointCount = pointCounts[i]; // Get the specific point count for this dataset
-      dynamicSlides.push(
-        await generateSlideForDataset(datasetId, datasetName, pointCount)
-      );
+      dynamicSlides.push(await generateSlideForDataset(datasetId, datasetName));
     }
 
     const docDefinition = {
@@ -1730,7 +1486,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         }
 
         const count = await getPointsInsideFeature(datasetId, layerViews);
-        pointCounts.push(count);
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
