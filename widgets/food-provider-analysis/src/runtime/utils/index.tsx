@@ -6,3 +6,4 @@ export * from "./legendUtils";
 export * from "./serviceAreaUtils";
 export * from "./sketchUtils";
 export * from "./networkUtils";
+export * from "./googleSheetsUtils";

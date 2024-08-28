@@ -50,6 +50,8 @@ import {
   handleNetworkPoint,
   removeNetworkPoint,
   createServiceArea,
+  fetchDataFromGoogleSheet,
+  findDataFromGoogleSheet,
 } from "./utils";
 
 const { useRef, useState, useEffect } = React;
@@ -175,7 +177,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [lastSelectedType, setLastSelectedType] = useState(null);
   const [sketchWidget, setSketchWidget] = useState(null);
   const [networkPoint, setNetworkPoint] = useState(null);
-  const [sheetData, setSheetData] = useState<any[]>([]); // State to store the Google Sheets data
+  const [sheetData, setSheetData] = useState<any[]>([]);
+  const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
+  const sheetId = "1X7d9su2_LpY6xqg1ZDjs7koFPu_6wnkXCiepl5d20iY";
+
+  useEffect(() => {
+    fetchDataFromGoogleSheet(apiKey, sheetId).then((data) => {
+      setSheetData(data);
+    });
+  }, [apiKey, sheetId]);
 
   useEffect(() => {
     if (usingCustomBoundary && jimuMapView) {
@@ -809,28 +819,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     return null;
   }
 
-  useEffect(() => {
-    // Function to fetch data from Google Sheets
-    const fetchDataFromGoogleSheet = () => {
-      const sheetId = "1X7d9su2_LpY6xqg1ZDjs7koFPu_6wnkXCiepl5d20iY";
-      const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
-
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/AboutTheLayersUpdateCurrent?key=${apiKey}`;
-
-      return fetch(url)
-        .then((response) => response.json())
-        .then((data) => {
-          setSheetData(data.values || []);
-          console.log("Data from Google Sheets: ", data.values);
-        })
-        .catch((error) => {
-          console.error("Error fetching data from Google Sheets:", error);
-        });
-    };
-
-    fetchDataFromGoogleSheet(); // Fetch data when component mounts
-  }, []); // Empty dependency array ensures this runs only once on mount
-
   const generateTestPDF = async (globalLegendData) => {
     // Create a canvas for the basemap and polygon
     const canvas = document.createElement("canvas");
@@ -990,185 +978,147 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         };
       }
 
-      // Fetches data from Google Sheets
-      function findDataFromGoogleSheet(datasetName) {
-        console.log("Dataset name: ", datasetName);
-
-        return new Promise((resolve, reject) => {
-          try {
-            if (!sheetData.length) {
-              throw new Error("Sheet data is not loaded yet.");
-            }
-
-            // Assuming that the first row in the sheet contains headers
-            const headers = sheetData[0];
-            const codeNameIndex = headers.indexOf("CodeNameReference");
-            const codeDescriptionIndex = headers.indexOf(
-              "CodeDescriptionReference"
-            );
-
-            if (codeNameIndex === -1 || codeDescriptionIndex === -1) {
-              throw new Error("Required columns not found in the sheet");
-            }
-
-            // Find the row where CodeNameReference matches the datasetName
-            const matchingRow = sheetData.find(
-              (row) => row[codeNameIndex] === datasetName
-            );
-
-            if (matchingRow) {
-              // Resolve with the value from the CodeDescriptionReference column
-              resolve(matchingRow[codeDescriptionIndex]);
-            } else {
-              console.warn("No matching dataset name found in the sheet.");
-              resolve(""); // Resolve with an empty string if no match is found
-            }
-          } catch (error) {
-            console.error("Error processing data from Google Sheets:", error);
-            reject(error);
-          }
-        });
-      }
-
       // Generate the layer description asynchronously and then continue with the slide generation
-      return findDataFromGoogleSheet(datasetName).then((textFromSheet) => {
-        const layerDescription = {
-          stack: [
-            {
-              text: textFromSheet,
-              fontSize: 30,
-              style: "bodyText",
-            },
-          ],
-          margin: [0, 190, 0, 0],
-        };
-
-        const headerWithRectangles = {
-          stack: [
-            {
-              canvas: [
-                {
-                  type: "rect",
-                  x: -82,
-                  y: 10,
-                  w: 30,
-                  h: 120,
-                  color: "#FFCC00",
-                },
-                {
-                  type: "rect",
-                  x: -104,
-                  y: 10,
-                  w: 10,
-                  h: 120,
-                  color: "#FFCC00",
-                },
-              ],
-            },
-            {
-              text: datasetName,
-              style: "header",
-              margin: [-10, -100, -2000, -200],
-              alignment: "left",
-            },
-          ],
-          margin: [0, 0, 0, 20],
-        };
-
-        const legendDataForDataset = globalLegendData[datasetId] || [];
-        const currentSymbolType = globalSymbol[datasetId] || "no-symbol";
-        let legendItems = generateLegendItems(
-          legendDataForDataset,
-          currentSymbolType
-        );
-
-        const legendColumns = [];
-        for (let i = 0; i < legendItems.length; i += 2) {
-          const column = {
-            stack: legendItems.slice(i, i + 2),
-            margin: [0, 0, 0, 5],
+      return findDataFromGoogleSheet(sheetData, datasetName).then(
+        (textFromSheet) => {
+          const layerDescription = {
+            stack: [
+              {
+                text: textFromSheet,
+                fontSize: 30,
+                style: "bodyText",
+              },
+            ],
+            margin: [0, 190, 0, 0],
           };
-          legendColumns.push(column);
-        }
 
-        const legendRow = {
-          columns: legendColumns.map((column) => ({
-            ...column,
-            width: "auto",
-          })),
-          columnGap: 30,
-        };
-
-        legendColumns.forEach((column) => {
-          column.width = "auto";
-        });
-
-        // Start with the initial parts of the statistics that are always included
-        let statistics = [
-          headerWithRectangles,
-          layerDescription,
-          coloredLine,
-          textGroup,
-          {
-            columns: [
+          const headerWithRectangles = {
+            stack: [
               {
-                image: Logos.LACounty_logo,
-                height: 250,
-                width: 250,
-                absolutePosition: { x: 20, y: 810 },
-              },
-              {
-                image: Logos.USC_logo,
-                height: 150,
-                width: 365,
-                absolutePosition: { x: 270, y: 928 },
-              },
-            ],
-          },
-        ];
-
-        if (currentSymbolType !== "no-symbol") {
-          statistics.push({
-            columns: [
-              {
-                text: "Legend",
-                fontSize: 48,
-                bold: true,
-                absolutePosition: { x: 920, y: 878 },
-              },
-              {
-                stack: [
+                canvas: [
                   {
-                    text: "Legend",
-                    fontSize: 48,
-                    bold: true,
-                    absolutePosition: { x: 920, y: 878 },
+                    type: "rect",
+                    x: -82,
+                    y: 10,
+                    w: 30,
+                    h: 120,
+                    color: "#FFCC00",
                   },
-                  legendRow,
+                  {
+                    type: "rect",
+                    x: -104,
+                    y: 10,
+                    w: 10,
+                    h: 120,
+                    color: "#FFCC00",
+                  },
                 ],
-                absolutePosition: { x: 920, y: 945 },
+              },
+              {
+                text: datasetName,
+                style: "header",
+                margin: [-10, -100, -2000, -200],
+                alignment: "left",
               },
             ],
-          });
-        }
+            margin: [0, 0, 0, 20],
+          };
 
-        return {
-          table: {
-            widths: ["50%", "60%"],
-            heights: [canvasHeight],
-            body: [
-              [
+          const legendDataForDataset = globalLegendData[datasetId] || [];
+          const currentSymbolType = globalSymbol[datasetId] || "no-symbol";
+          let legendItems = generateLegendItems(
+            legendDataForDataset,
+            currentSymbolType
+          );
+
+          const legendColumns = [];
+          for (let i = 0; i < legendItems.length; i += 2) {
+            const column = {
+              stack: legendItems.slice(i, i + 2),
+              margin: [0, 0, 0, 5],
+            };
+            legendColumns.push(column);
+          }
+
+          const legendRow = {
+            columns: legendColumns.map((column) => ({
+              ...column,
+              width: "auto",
+            })),
+            columnGap: 30,
+          };
+
+          legendColumns.forEach((column) => {
+            column.width = "auto";
+          });
+
+          // Start with the initial parts of the statistics that are always included
+          let statistics = [
+            headerWithRectangles,
+            layerDescription,
+            coloredLine,
+            textGroup,
+            {
+              columns: [
                 {
-                  stack: statistics,
-                  margin: [65, 0],
+                  image: Logos.LACounty_logo,
+                  height: 250,
+                  width: 250,
+                  absolutePosition: { x: 20, y: 810 },
                 },
-                "",
+                {
+                  image: Logos.USC_logo,
+                  height: 150,
+                  width: 365,
+                  absolutePosition: { x: 270, y: 928 },
+                },
               ],
-            ],
-          },
-          layout: "noBorders",
-        };
-      });
+            },
+          ];
+
+          if (currentSymbolType !== "no-symbol") {
+            statistics.push({
+              columns: [
+                {
+                  text: "Legend",
+                  fontSize: 48,
+                  bold: true,
+                  absolutePosition: { x: 920, y: 878 },
+                },
+                {
+                  stack: [
+                    {
+                      text: "Legend",
+                      fontSize: 48,
+                      bold: true,
+                      absolutePosition: { x: 920, y: 878 },
+                    },
+                    legendRow,
+                  ],
+                  absolutePosition: { x: 920, y: 945 },
+                },
+              ],
+            });
+          }
+
+          return {
+            table: {
+              widths: ["50%", "60%"],
+              heights: [canvasHeight],
+              body: [
+                [
+                  {
+                    stack: statistics,
+                    margin: [65, 0],
+                  },
+                  "",
+                ],
+              ],
+            },
+            layout: "noBorders",
+          };
+        }
+      );
     }
 
     let dynamicSlides = [];
