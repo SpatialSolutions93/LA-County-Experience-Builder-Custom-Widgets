@@ -292,29 +292,3 @@ export const filterPointsWithinPolygon = async (
     console.error("Unsupported geometry type for filtering or clipping.");
   }
 };
-
-export const getPointsInsideFeature = async (
-  datasetId,
-  layerViews // Adjust this type based on your actual layerViews structure
-): Promise<number> => {
-  const currentLayerView = layerViews[datasetId];
-  if (!currentLayerView.layer) {
-    console.error(`No layer view found for dataset ID: ${datasetId}`);
-    return 0;
-  }
-
-  try {
-    const query = currentLayerView.layer.createQuery();
-    query.geometry = currentLayerView.filter.geometry; // Make sure this is the correct way to access geometry
-    query.spatialRelationship = "intersects";
-
-    const result = await currentLayerView.layer.queryFeatures(query);
-    return result.features.length;
-  } catch (error) {
-    console.error(
-      `Error querying features for dataset ID: ${datasetId}`,
-      error
-    );
-    return 0;
-  }
-};

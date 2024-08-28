@@ -45,7 +45,6 @@ import {
   handleDropdownChange,
   createMask,
   filterPointsWithinPolygon,
-  getPointsInsideFeature,
   handleSketchWidget,
   removeSketchWidget,
   handleNetworkPoint,
@@ -1484,8 +1483,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             console.error("Error adding graphics layer to map:", error);
           }
         }
-
-        const count = await getPointsInsideFeature(datasetId, layerViews);
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
