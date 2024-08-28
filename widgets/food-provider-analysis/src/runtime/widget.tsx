@@ -175,6 +175,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [lastSelectedType, setLastSelectedType] = useState(null);
   const [sketchWidget, setSketchWidget] = useState(null);
   const [networkPoint, setNetworkPoint] = useState(null);
+  const [sheetData, setSheetData] = useState<any[]>([]); // State to store the Google Sheets data
 
   useEffect(() => {
     if (usingCustomBoundary && jimuMapView) {
@@ -808,6 +809,28 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     return null;
   }
 
+  useEffect(() => {
+    // Function to fetch data from Google Sheets
+    const fetchDataFromGoogleSheet = () => {
+      const sheetId = "1X7d9su2_LpY6xqg1ZDjs7koFPu_6wnkXCiepl5d20iY";
+      const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
+
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/AboutTheLayersUpdateCurrent?key=${apiKey}`;
+
+      return fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          setSheetData(data.values || []);
+          console.log("Data from Google Sheets: ", data.values);
+        })
+        .catch((error) => {
+          console.error("Error fetching data from Google Sheets:", error);
+        });
+    };
+
+    fetchDataFromGoogleSheet(); // Fetch data when component mounts
+  }, []); // Empty dependency array ensures this runs only once on mount
+
   const generateTestPDF = async (globalLegendData) => {
     // Create a canvas for the basemap and polygon
     const canvas = document.createElement("canvas");
@@ -968,20 +991,17 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       }
 
       // Fetches data from Google Sheets
-      function fetchDataFromGoogleSheet(datasetName) {
+      function findDataFromGoogleSheet(datasetName) {
         console.log("Dataset name: ", datasetName);
-        const sheetId = "1X7d9su2_LpY6xqg1ZDjs7koFPu_6wnkXCiepl5d20iY";
-        const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
 
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/AboutTheLayersUpdateCurrent?key=${apiKey}`;
-
-        return fetch(url)
-          .then((response) => response.json())
-          .then((data) => {
-            console.log("Data from Google Sheets: ", data);
+        return new Promise((resolve, reject) => {
+          try {
+            if (!sheetData.length) {
+              throw new Error("Sheet data is not loaded yet.");
+            }
 
             // Assuming that the first row in the sheet contains headers
-            const headers = data.values[0];
+            const headers = sheetData[0];
             const codeNameIndex = headers.indexOf("CodeNameReference");
             const codeDescriptionIndex = headers.indexOf(
               "CodeDescriptionReference"
@@ -992,26 +1012,26 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             }
 
             // Find the row where CodeNameReference matches the datasetName
-            const matchingRow = data.values.find(
+            const matchingRow = sheetData.find(
               (row) => row[codeNameIndex] === datasetName
             );
 
             if (matchingRow) {
-              // Return the value from the CodeDescriptionReference column
-              return matchingRow[codeDescriptionIndex];
+              // Resolve with the value from the CodeDescriptionReference column
+              resolve(matchingRow[codeDescriptionIndex]);
             } else {
               console.warn("No matching dataset name found in the sheet.");
-              return "";
+              resolve(""); // Resolve with an empty string if no match is found
             }
-          })
-          .catch((error) => {
-            console.error("Error fetching data from Google Sheets:", error);
-            return "";
-          });
+          } catch (error) {
+            console.error("Error processing data from Google Sheets:", error);
+            reject(error);
+          }
+        });
       }
 
       // Generate the layer description asynchronously and then continue with the slide generation
-      return fetchDataFromGoogleSheet(datasetName).then((textFromSheet) => {
+      return findDataFromGoogleSheet(datasetName).then((textFromSheet) => {
         const layerDescription = {
           stack: [
             {
