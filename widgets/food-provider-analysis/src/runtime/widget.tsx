@@ -1,3 +1,7 @@
+/********************************************
+ *                  IMPORTS                 *
+ ********************************************/
+
 import {
   React,
   DataSourceComponent,
@@ -12,14 +16,7 @@ import MapView from "@arcgis/core/views/MapView";
 import Extent from "@arcgis/core/geometry/Extent.js";
 import Graphic from "@arcgis/core/Graphic";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
-import Sketch from "@arcgis/core/widgets/Sketch.js";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
-import serviceArea from "@arcgis/core/rest/serviceArea";
-import ServiceAreaParameters from "@arcgis/core/rest/support/ServiceAreaParameters";
-import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
-import esriConfig from "@arcgis/core/config";
-import OAuthInfo from "@arcgis/core/identity/OAuthInfo";
-import IdentityManager from "@arcgis/core/identity/IdentityManager";
 import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol.js";
 
 import "./widgetStyles.css";
@@ -54,10 +51,13 @@ import {
   findDataFromGoogleSheet,
 } from "./utils";
 
-const { useRef, useState, useEffect } = React;
+/**************************************************
+ *                  INITIAL SETUP                *
+ **************************************************/
 
 // Set up the virtual file system for pdfMake.
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
+const { useRef, useState, useEffect } = React;
 
 /**
  * Widget component that displays a PDF report generated from a feature layer.
@@ -65,11 +65,17 @@ pdfMake.vfs = pdfFonts.pdfMake.vfs;
  * @returns {JSX.Element} The rendered widget component.
  */
 export default function Widget(props: AllWidgetProps<unknown>) {
+  /**********************************************
+   *                  CONSTANTS                 *
+   **********************************************/
+
+  /*      Use Refs      */
   const dsRef = useRef(null);
   const mapViewRef = useRef(null);
   const mapViewRef2 = useRef(null);
+
+  /*      States      */
   const [pdfBlob, setPdfBlob] = useState(null);
-  const [numPages, setNumPages] = useState(null);
   const [neighborhoodList, setNeighborhoodList] = useState([]);
   const [cityList, setCityList] = useState([]);
   const [CSAList, setCSAList] = useState([]);
@@ -178,131 +184,43 @@ export default function Widget(props: AllWidgetProps<unknown>) {
   const [sketchWidget, setSketchWidget] = useState(null);
   const [networkPoint, setNetworkPoint] = useState(null);
   const [sheetData, setSheetData] = useState<any[]>([]);
+
+  /********************************************
+   *              API KEYS & CONFIG           *
+   ********************************************/
+
+  // Google Sheets API key and sheet ID for pulling layer descriptions
   const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
   const sheetId = "1X7d9su2_LpY6xqg1ZDjs7koFPu_6wnkXCiepl5d20iY";
 
-  useEffect(() => {
-    fetchDataFromGoogleSheet(apiKey, sheetId).then((data) => {
-      setSheetData(data);
-    });
-  }, [apiKey, sheetId]);
+  /********************************************
+   *           ATTRIBUTE MAPPING              *
+   ********************************************/
 
-  useEffect(() => {
-    if (usingCustomBoundary && jimuMapView) {
-      handleSketchWidget(jimuMapView, setSketchWidget, setLastGraphicGeometry);
-    } else if (!usingCustomBoundary && jimuMapView) {
-      removeSketchWidget(jimuMapView, setSketchWidget);
-    }
-
-    // Cleanup function to remove the Sketch widget when the widget unmounts
-    return () => {
-      if (jimuMapView) {
-        removeSketchWidget(jimuMapView, setSketchWidget);
-      }
-    };
-  }, [usingCustomBoundary, jimuMapView]);
-
-  useEffect(() => {
-    if (usingNetworkBoundary && jimuMapView) {
-      handleNetworkPoint(
-        jimuMapView,
-        setNetworkPoint,
-        setLastNetworkPoint,
-        createServiceArea
-      );
-    } else if (!usingNetworkBoundary && jimuMapView) {
-      removeNetworkPoint(jimuMapView, setNetworkPoint);
-    }
-
-    return () => {
-      if (jimuMapView) {
-        removeNetworkPoint(jimuMapView, setNetworkPoint);
-      }
-    };
-  }, [usingNetworkBoundary, jimuMapView]);
-
-  const onActiveViewChange = (jimuMapView) => {
-    setJimuMapView(jimuMapView);
+  // Mapping of boundary types to their respective attribute keys
+  const ATTRIBUTE_MAP = {
+    Neighborhood: "name",
+    City: "CITY_NAME",
+    "Countywide Statistical Area (CSA)": "LABEL",
+    "Census Tract": "CT20",
+    "LA City Council Districts": "DISTRICT",
+    "Service Planning Area (SPA)": "SPA_NAME",
+    "Supervisor District": "LABEL",
   };
+  const attributeKey = ATTRIBUTE_MAP[boundaryType];
+  const featureName =
+    selectedRecord?.attributes?.[attributeKey] || "Custom Boundary";
 
-  useEffect(() => {
-    const LACountyWebMap = new WebMap({
-      portalItem: {
-        id: "2bc29891fc744b62b57de017897583e0",
-      },
-    });
+  /********************************************
+   *              MAP SETUP                   *
+   ********************************************/
 
-    const loadAndSetLayer = (layer: any, setter: Function) => {
-      layer
-        .load()
-        .then(() => {
-          setter(layer);
-        })
-        .catch((error: any) => {
-          console.error(`Error loading layer ${layer.id}: `, error);
-        });
-    };
+  // Setup the map and layers for the selected feature
+  const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
 
-    LACountyWebMap.load()
-      .then(() => {
-        // List of layer IDs and their corresponding state setters
-        const layerConfigs = [
-          { id: "18ebc6b8d5a-layer-245", setter: setAge },
-          { id: "18d207e7d8a-layer-65", setter: setCalFreshCases },
-          { id: "18f7a3f2967-layer-268", setter: setCalFreshFoodRetailer },
-          { id: "18d20a05f23-layer-65", setter: setCalFreshGap },
-          { id: "18f7a41e8c3-layer-269", setter: setCalFreshRestaurant },
-          { id: "18707320643-layer-42", setter: setCommunityGardens },
-          { id: "18b8d040b47-layer-46", setter: setDepression },
-          { id: "18f08a70745-layer-246", setter: setRace },
-          { id: "18b8d040b48-layer-47", setter: setDiabetes },
-          { id: "18e76a08700-layer-201", setter: setDisability },
-          { id: "18e74a228f5-layer-126", setter: setEnglishSecondLanguage },
-          { id: "18f8d0f38be-layer-268", setter: setFarmersMarkets },
-          { id: "18f2b1319c2-layer-262", setter: setFoodDeserts },
-          { id: "18dd297ab94-layer-64", setter: setFoodInsecurity },
-          { id: "189bf2bdaf4-layer-41", setter: setFoodPantry },
-          { id: "18f8d0f44e4-layer-269", setter: setFoodSwamps },
-          { id: "18e76c54d63-layer-214", setter: setHealthInsurance },
-          { id: "18c5fdaed43-layer-63", setter: setHealthyPlacesIndex },
-          { id: "18b8d040b46-layer-45", setter: setHeartDisease },
-          { id: "18f032a898b-layer-261", setter: setHispanic },
-          { id: "18e74a228f4-layer-125", setter: setHouseholdSize },
-          { id: "18e7683555d-layer-195", setter: setImmigrationStatus },
-          { id: "18e7404d4be-layer-79", setter: setIncome },
-          { id: "18b8d040b48-layer-48", setter: setObesity },
-          { id: "18f99cdd09a-layer-274", setter: setParks },
-          { id: "18707320ad8-layer-43", setter: setParksAndGardens },
-          { id: "18df1be9f78-layer-66", setter: setPoverty },
-          { id: "LMS_Data_Public_2415", setter: setPublicElementarySchools },
-          { id: "LMS_Data_Public_8480", setter: setPublicHighSchools },
-          { id: "LMS_Data_Public_2784", setter: setPublicMiddleSchools },
-          { id: "18e9b33a046-layer-130", setter: setRedlining },
-          { id: "18ba2205ac5-layer-54", setter: setRestaurants },
-          { id: "18ba223bf16-layer-53", setter: setRetailFoodMarkets },
-          { id: "18f08ad03dc-layer-255", setter: setSocialVulnerabilityIndex },
-          {
-            id: "18e765e956c-layer-139",
-            setter: setVehicleOwnershipLandowners,
-          },
-          { id: "18e765e956d-layer-140", setter: setVehicleOwnershipRenters },
-          { id: "18f7a6abc76-layer-268", setter: setWicFoodRetailer },
-        ];
-
-        // Load and set each layer based on its unique ID
-        layerConfigs.forEach(({ id, setter }) => {
-          const layer = LACountyWebMap.findLayerById(id);
-          if (layer) {
-            loadAndSetLayer(layer, setter);
-          } else {
-            console.error(`Layer with ID ${id} not found in the web map`);
-          }
-        });
-      })
-      .catch((error) => {
-        console.error("Error loading WebMap: ", error);
-      });
-  }, []);
+  /********************************************
+   *          DATASET OBJECT LITERALS         *
+   ********************************************/
 
   const datasets = [
     { id: 1, name: "Age", dataSource: age },
@@ -368,66 +286,176 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     { id: 37, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
   ];
 
-  function getDatasetName(datasetId) {
-    const dataset = datasets.find((ds) => ds.id === datasetId);
-    return dataset ? dataset.name : "Unknown Dataset";
+  /********************************************
+   *             FEATURE LAYERS               *
+   ********************************************/
+
+  const neighborhoods = new FeatureLayer({
+    portalItem: {
+      id: "d6c55385a0e749519f238b77135eafac",
+    },
+  });
+
+  const cities = new FeatureLayer({
+    url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/19",
+  });
+
+  const CSA = new FeatureLayer({
+    url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/23",
+  });
+
+  const censusTracts = new FeatureLayer({
+    url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Demographics/MapServer/14",
+  });
+
+  const LACityCouncilDistricts = new FeatureLayer({
+    url: "https://maps.lacity.org/lahub/rest/services/Boundaries/MapServer/13",
+  });
+
+  const servicePlanningAreas = new FeatureLayer({
+    url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Administrative_Boundaries/MapServer/23",
+  });
+
+  const supervisorDistricts = new FeatureLayer({
+    url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/27",
+  });
+
+  /********************************************
+   *              INTERFACES                  *
+   ********************************************/
+
+  interface ImageDimensions {
+    width: number;
+    height: number;
   }
 
-  const [neighborhoods] = useState(
-    new FeatureLayer({
+  /*************************
+   *      USE EFFECTS      *
+   *************************/
+
+  useEffect(() => {
+    fetchDataFromGoogleSheet(apiKey, sheetId).then((data) => {
+      setSheetData(data);
+    });
+  }, [apiKey, sheetId]);
+
+  useEffect(() => {
+    if (usingCustomBoundary && jimuMapView) {
+      handleSketchWidget(jimuMapView, setSketchWidget, setLastGraphicGeometry);
+    } else if (!usingCustomBoundary && jimuMapView) {
+      removeSketchWidget(jimuMapView, setSketchWidget);
+    }
+
+    // Cleanup function to remove the Sketch widget when the widget unmounts
+    return () => {
+      if (jimuMapView) {
+        removeSketchWidget(jimuMapView, setSketchWidget);
+      }
+    };
+  }, [usingCustomBoundary, jimuMapView]);
+
+  useEffect(() => {
+    if (usingNetworkBoundary && jimuMapView) {
+      handleNetworkPoint(
+        jimuMapView,
+        setNetworkPoint,
+        setLastNetworkPoint,
+        createServiceArea
+      );
+    } else if (!usingNetworkBoundary && jimuMapView) {
+      removeNetworkPoint(jimuMapView, setNetworkPoint);
+    }
+
+    return () => {
+      if (jimuMapView) {
+        removeNetworkPoint(jimuMapView, setNetworkPoint);
+      }
+    };
+  }, [usingNetworkBoundary, jimuMapView]);
+
+  useEffect(() => {
+    const LACountyWebMap = new WebMap({
       portalItem: {
-        id: "d6c55385a0e749519f238b77135eafac",
+        id: "2bc29891fc744b62b57de017897583e0",
       },
-    })
-  );
+    });
 
-  const [cities] = useState(
-    new FeatureLayer({
-      url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/19",
-    })
-  );
+    const loadAndSetLayer = (layer: any, setter: Function) => {
+      layer
+        .load()
+        .then(() => {
+          setter(layer);
+        })
+        .catch((error: any) => {
+          console.error(`Error loading layer ${layer.id}: `, error);
+        });
+    };
 
-  const [CSA] = useState(
-    new FeatureLayer({
-      url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/23",
-    })
-  );
+    LACountyWebMap.load()
+      .then(() => {
+        // List of layer IDs and their corresponding state setters
+        const layerConfigs = [
+          { id: "18ebc6b8d5a-layer-245", setter: setAge },
+          { id: "18d207e7d8a-layer-65", setter: setCalFreshCases },
+          { id: "18f7a3f2967-layer-268", setter: setCalFreshFoodRetailer },
+          { id: "18d20a05f23-layer-65", setter: setCalFreshGap },
+          { id: "18f7a41e8c3-layer-269", setter: setCalFreshRestaurant },
+          { id: "18707320643-layer-42", setter: setCommunityGardens },
+          { id: "18b8d040b47-layer-46", setter: setDepression },
+          { id: "18f08a70745-layer-246", setter: setRace },
+          { id: "18b8d040b48-layer-47", setter: setDiabetes },
+          { id: "18e76a08700-layer-201", setter: setDisability },
+          { id: "18e74a228f5-layer-126", setter: setEnglishSecondLanguage },
+          { id: "18f8d0f38be-layer-268", setter: setFarmersMarkets },
+          { id: "18f2b1319c2-layer-262", setter: setFoodDeserts },
+          { id: "18dd297ab94-layer-64", setter: setFoodInsecurity },
+          { id: "189bf2bdaf4-layer-41", setter: setFoodPantry },
+          { id: "18f8d0f44e4-layer-269", setter: setFoodSwamps },
+          { id: "18e76c54d63-layer-214", setter: setHealthInsurance },
+          { id: "18c5fdaed43-layer-63", setter: setHealthyPlacesIndex },
+          { id: "18b8d040b46-layer-45", setter: setHeartDisease },
+          { id: "18f032a898b-layer-261", setter: setHispanic },
+          { id: "18e74a228f4-layer-125", setter: setHouseholdSize },
+          { id: "18e7683555d-layer-195", setter: setImmigrationStatus },
+          { id: "18e7404d4be-layer-79", setter: setIncome },
+          { id: "18b8d040b48-layer-48", setter: setObesity },
+          { id: "18f99cdd09a-layer-274", setter: setParks },
+          { id: "18707320ad8-layer-43", setter: setParksAndGardens },
+          { id: "18df1be9f78-layer-66", setter: setPoverty },
+          { id: "LMS_Data_Public_2415", setter: setPublicElementarySchools },
+          { id: "LMS_Data_Public_8480", setter: setPublicHighSchools },
+          { id: "LMS_Data_Public_2784", setter: setPublicMiddleSchools },
+          { id: "18e9b33a046-layer-130", setter: setRedlining },
+          { id: "18ba2205ac5-layer-54", setter: setRestaurants },
+          { id: "18ba223bf16-layer-53", setter: setRetailFoodMarkets },
+          {
+            id: "18f08ad03dc-layer-255",
+            setter: setSocialVulnerabilityIndex,
+          },
+          {
+            id: "18e765e956c-layer-139",
+            setter: setVehicleOwnershipLandowners,
+          },
+          { id: "18e765e956d-layer-140", setter: setVehicleOwnershipRenters },
+          { id: "18f7a6abc76-layer-268", setter: setWicFoodRetailer },
+        ];
 
-  const [censusTracts] = useState(
-    new FeatureLayer({
-      url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Demographics/MapServer/14",
-    })
-  );
+        // Load and set each layer based on its unique ID
+        layerConfigs.forEach(({ id, setter }) => {
+          const layer = LACountyWebMap.findLayerById(id);
+          if (layer) {
+            loadAndSetLayer(layer, setter);
+          } else {
+            console.error(`Layer with ID ${id} not found in the web map`);
+          }
+        });
+      })
+      .catch((error) => {
+        console.error("Error loading WebMap: ", error);
+      });
+  }, []);
 
-  const [LACityCouncilDistricts] = useState(
-    new FeatureLayer({
-      url: "https://maps.lacity.org/lahub/rest/services/Boundaries/MapServer/13",
-    })
-  );
-
-  const [servicePlanningAreas] = useState(
-    new FeatureLayer({
-      url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Administrative_Boundaries/MapServer/23",
-    })
-  );
-
-  const [supervisorDistricts] = useState(
-    new FeatureLayer({
-      url: "https://public.gis.lacounty.gov/public/rest/services/LACounty_Dynamic/Political_Boundaries/MapServer/27",
-    })
-  );
-
-  const ATTRIBUTE_MAP = {
-    Neighborhood: "name",
-    City: "CITY_NAME",
-    "Countywide Statistical Area (CSA)": "LABEL",
-    "Census Tract": "CT20",
-    "LA City Council Districts": "DISTRICT",
-    "Service Planning Area (SPA)": "SPA_NAME",
-    "Supervisor District": "LABEL",
-  };
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (isFetchingData) {
       const interval = setInterval(() => {
         setLoadingDots((prev) => (prev === 7 ? 1 : prev + 1));
@@ -437,7 +465,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
   }, [isFetchingData]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const sortByAttribute = (features, attribute) => {
       return features.sort((a, b) =>
         a.attributes[attribute].localeCompare(b.attributes[attribute])
@@ -512,15 +540,68 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     CSA,
   ]);
 
-  /**
-   * Handler for document load success event.
-   * @param {Object} param - The event parameters.
-   * @param {number} param.numPages - The total number of pages in the document.
-   */
+  useEffect(() => {
+    if (imageDimensions) {
+      generateTestPDF(globalLegendData).then(() => {
+        progressCtrRef.current += 1;
+        if (progressCtrRef.current === slideCtrRef.current) {
+          setIsLoadingReport(false);
 
-  interface ImageDimensions {
-    width: number;
-    height: number;
+          handleCloseReport();
+
+          // Reset the progress counter
+          progressCtrRef.current = 0;
+        }
+      });
+    }
+  }, [imageDimensions]);
+
+  useEffect(() => {
+    if (pdfBlob instanceof Blob) {
+      const url = URL.createObjectURL(pdfBlob);
+      setBlobURL(url);
+
+      // Cleanup function to revoke the blob URL when it's not needed anymore
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+  }, [pdfBlob]);
+
+  useEffect(() => {
+    const reportForm = document.getElementById("reportForm");
+    if (reportForm) {
+      reportForm.style.visibility = "visible";
+    }
+  }, [customBoundarySelected]); // Only re-run the effect if customBoundarySelected changes
+
+  useEffect(() => {
+    return () => {
+      if (mapViewRef.current) {
+        mapViewRef.current.destroy();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (mapViewRef2.current) {
+        mapViewRef2.current.destroy();
+      }
+    };
+  }, []);
+
+  /*************************
+   *     FUNCTIONS        *
+   *************************/
+
+  const onActiveViewChange = (jimuMapView) => {
+    setJimuMapView(jimuMapView);
+  };
+
+  function getDatasetName(datasetId) {
+    const dataset = datasets.find((ds) => ds.id === datasetId);
+    return dataset ? dataset.name : "Unknown Dataset";
   }
 
   const handleCloseReport = () => {
@@ -576,14 +657,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     setDatLabelColor("black");
     setDatLabelFontWeight("normal");
   };
-
-  const attributeKey = ATTRIBUTE_MAP[boundaryType];
-
-  const featureName =
-    selectedRecord?.attributes?.[attributeKey] || "Custom Boundary";
-
-  // 1. Setup the map and layers for the selected feature
-  const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
 
   const handleScreenshot = async () => {
     const mapView = mapViewRef2.current;
@@ -1266,22 +1339,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     });
   };
 
-  React.useEffect(() => {
-    if (imageDimensions) {
-      generateTestPDF(globalLegendData).then(() => {
-        progressCtrRef.current += 1;
-        if (progressCtrRef.current === slideCtrRef.current) {
-          setIsLoadingReport(false);
-
-          handleCloseReport();
-
-          // Reset the progress counter
-          progressCtrRef.current = 0;
-        }
-      });
-    }
-  }, [imageDimensions]);
-
   const handleReportClick = async () => {
     const reportForm = document.getElementById("reportForm");
     if (reportForm) {
@@ -1480,18 +1537,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     }
   };
 
-  React.useEffect(() => {
-    if (pdfBlob instanceof Blob) {
-      const url = URL.createObjectURL(pdfBlob);
-      setBlobURL(url);
-
-      // Cleanup function to revoke the blob URL when it's not needed anymore
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    }
-  }, [pdfBlob]);
-
   const onBoundaryTypeChange = (event) => {
     setLastSelectedType(event.target.value);
     const selectedType = event.target.value;
@@ -1562,13 +1607,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
     // Logic to toggle visibility of report and use case forms
   };
-
-  useEffect(() => {
-    const reportForm = document.getElementById("reportForm");
-    if (reportForm) {
-      reportForm.style.visibility = "visible";
-    }
-  }, [customBoundarySelected]); // Only re-run the effect if customBoundarySelected changes
 
   const dataRender = (ds: DataSource) => {
     if (!ds) return null;
@@ -2189,22 +2227,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       pageSize: 10,
     };
   };
-
-  React.useEffect(() => {
-    return () => {
-      if (mapViewRef.current) {
-        mapViewRef.current.destroy();
-      }
-    };
-  }, []);
-
-  React.useEffect(() => {
-    return () => {
-      if (mapViewRef2.current) {
-        mapViewRef2.current.destroy();
-      }
-    };
-  }, []);
 
   return (
     <div
