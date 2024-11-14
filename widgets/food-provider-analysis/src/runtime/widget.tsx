@@ -198,7 +198,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
    ********************************************/
 
   // Mapping of boundary types to their respective attribute keys
-  const ATTRIBUTE_MAP = {
+  const attributeMap = {
     Neighborhood: "name",
     City: "CITY_NAME",
     "Countywide Statistical Area (CSA)": "LABEL",
@@ -207,21 +207,15 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     "Service Planning Area (SPA)": "SPA_NAME",
     "Supervisor District": "LABEL",
   };
-  const attributeKey = ATTRIBUTE_MAP[boundaryType];
+
+  // Get the attribute key for the selected boundary type
+  const attributeKey = attributeMap[boundaryType];
+
+  // Get the feature name for the selected record
   const featureName =
     selectedRecord?.attributes?.[attributeKey] || "Custom Boundary";
 
-  /********************************************
-   *              MAP SETUP                   *
-   ********************************************/
-
-  // Setup the map and layers for the selected feature
-  const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
-
-  /********************************************
-   *          DATASET OBJECT LITERALS         *
-   ********************************************/
-
+  // An array of datasets to be used in the report
   const datasets = [
     { id: 1, name: "Age", dataSource: age },
     { id: 2, name: "CalFresh Cases", dataSource: calFreshCases },
@@ -264,7 +258,11 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       dataSource: publicElementarySchools,
     },
     { id: 29, name: "Public High Schools", dataSource: publicHighSchools },
-    { id: 30, name: "Public Middle Schools", dataSource: publicMiddleSchools },
+    {
+      id: 30,
+      name: "Public Middle Schools",
+      dataSource: publicMiddleSchools,
+    },
     { id: 31, name: "Redlining", dataSource: redlining },
     { id: 32, name: "Restaurants", dataSource: restaurants },
     { id: 33, name: "Retail Food Markets", dataSource: retailFoodMarkets },
@@ -285,6 +283,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     },
     { id: 37, name: "WIC Food Retailers", dataSource: wicFoodRetailer },
   ];
+
+  // Constant for the map used to generate screenshots
+  const [webmap] = useState(new WebMap({ basemap: "topo-vector" }));
 
   /********************************************
    *             FEATURE LAYERS               *
@@ -339,7 +340,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
     });
   }, [apiKey, sheetId]);
 
-  useEffect(() => {
+  /*   useEffect(() => {
     if (usingCustomBoundary && jimuMapView) {
       handleSketchWidget(jimuMapView, setSketchWidget, setLastGraphicGeometry);
     } else if (!usingCustomBoundary && jimuMapView) {
@@ -352,9 +353,9 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         removeSketchWidget(jimuMapView, setSketchWidget);
       }
     };
-  }, [usingCustomBoundary, jimuMapView]);
+  }, [usingCustomBoundary, jimuMapView]); */
 
-  useEffect(() => {
+  /*   useEffect(() => {
     if (usingNetworkBoundary && jimuMapView) {
       handleNetworkPoint(
         jimuMapView,
@@ -371,7 +372,7 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         removeNetworkPoint(jimuMapView, setNetworkPoint);
       }
     };
-  }, [usingNetworkBoundary, jimuMapView]);
+  }, [usingNetworkBoundary, jimuMapView]); */
 
   useEffect(() => {
     const LACountyWebMap = new WebMap({
@@ -472,20 +473,20 @@ export default function Widget(props: AllWidgetProps<unknown>) {
       );
     };
 
-    // Set usingCustomBoundary to true if "Custom" is selected
+    /*     // Set usingCustomBoundary to true if "Custom" is selected
     if (boundaryType === "Custom") {
       setUsingCustomBoundary(true);
     } else if (boundaryType) {
       setUsingCustomBoundary(false); // Reset to false when another option is selected
       setIsFetchingData(true); // Start fetching when there's an actual boundary type
-    }
+    } */
 
-    if (boundaryType === "Network") {
+    /*     if (boundaryType === "Network") {
       setUsingNetworkBoundary(true); // FOCUS FOCUS 1
     } else if (boundaryType) {
       setUsingNetworkBoundary(false); // Reset to false when another option is selected
       setIsFetchingData(true); // Start fetching when there's an actual boundary type
-    }
+    } */
 
     if (boundaryType === "Neighborhood") {
       neighborhoods.queryFeatures().then((featureSet) => {

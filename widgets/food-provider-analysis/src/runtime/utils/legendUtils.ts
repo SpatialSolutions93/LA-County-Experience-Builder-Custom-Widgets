@@ -1,5 +1,3 @@
-// LegendUtils.tsx
-
 // Function to convert rgba to hex, this will be used in the legend item creation
 export function rgbaToHex(r: number, g: number, b: number): string {
   const toHex = (c: number) => ("0" + c.toString(16)).slice(-2);

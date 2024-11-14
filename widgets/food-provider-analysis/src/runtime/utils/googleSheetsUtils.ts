@@ -1,5 +1,3 @@
-// utils/googleSheetsUtils.ts
-
 export const fetchDataFromGoogleSheet = (
   apiKey: string,
   sheetId: string

@@ -1,5 +1,3 @@
-// reportGenerationLogic.tsx
-
 import type { SetStateAction, Dispatch } from "react";
 import Graphic from "@arcgis/core/Graphic";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
@@ -7,7 +5,6 @@ import Polygon from "@arcgis/core/geometry/Polygon";
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import type { Geometry } from "@arcgis/core/geometry";
-import { set } from "seamless-immutable";
 
 // Define the createMask function which creates and returns a mask Graphic
 export const createMask = async (mapView, geometryToUse) => {

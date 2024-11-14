@@ -1,4 +1,3 @@
-// customStyles.ts
 import { CSSProperties } from "react";
 
 export const mapStyle: CSSProperties = {
