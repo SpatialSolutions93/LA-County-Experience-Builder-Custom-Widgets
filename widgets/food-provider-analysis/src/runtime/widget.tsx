@@ -829,8 +829,6 @@ export default function Widget(props: AllWidgetProps<unknown>) {
         webmap.add(wicFoodRetailer);
       }
 
-      console.log("Last selected type latter: ", lastSelectedType);
-
       mapViewRef2.current = mapViewRef.current;
 
       const mapView = new MapView({
@@ -972,89 +970,27 @@ export default function Widget(props: AllWidgetProps<unknown>) {
 
       let textGroup;
 
-      if (selectedFeatureName === "Hyde Park") {
-        if (datasetName === "Retail Food Markets") {
-          textGroup = {
-            stack: [
-              {
-                text: `${bullet} 38 Retail Food Markets in Hyde Park`,
-                style: "bodyText",
-              },
-              {
-                text: `${bullet} 1 Retail Food Market for every 938 people`,
-                style: "bodyText",
-              },
-              {
-                text: `${bullet} 13 Retail Food Markets every square mile`,
-                style: "bodyText",
-              },
-            ],
-            margin: [0, -183, 0, 0], // Adjust this margin to move the entire group up by 200 units
-          };
-        } else if (datasetName === "Food Insecurity") {
-          textGroup = {
-            stack: [
-              {
-                text: `${bullet} 12% of the population in Hyde Park is food insecure`,
-                style: "bodyText",
-              },
-            ],
-            margin: [0, -183, 0, 0],
-          };
-        } else if (datasetName === "Diabetes") {
-          textGroup = {
-            stack: [
-              {
-                text: `${bullet} 16% of the population in Hyde Park has diabetes`,
-                style: "bodyText",
-              },
-            ],
-            margin: [0, -183, 0, 0],
-          };
-        } else if (datasetName === "Vehicle Ownership (Landowners)") {
-          textGroup = {
-            stack: [
-              {
-                text: `${bullet} 5% of owner occupied households in Hyde Park have no access to a vehicle`,
-                style: "bodyText",
-              },
-            ],
-            margin: [0, -183, 0, 0],
-          };
-        } else if (datasetName === "Redlining") {
-          textGroup = {
-            stack: [
-              {
-                text: `${bullet} 8% of Hyde Park was historically redlined`,
-                style: "bodyText",
-              },
-            ],
-            margin: [0, -183, 0, 0],
-          };
-        }
-      } else {
-        textGroup = {
-          stack: [
-            {
-              text: `${bullet} undefined ${datasetName} in ${selectedFeatureName}`,
-              style: "bodyText",
-            },
-            {
-              text: `${bullet} 1 ${datasetName} for every [#] people`,
-              style: "bodyText",
-            },
-            {
-              text: `${bullet} ${averagePerSquareMile} ${datasetName} every square mile`,
-              style: "bodyText",
-            },
-          ],
-          margin: [0, -183, 0, 0],
-        };
-      }
+      textGroup = {
+        stack: [
+          {
+            text: `${bullet} undefined ${datasetName} in ${selectedFeatureName}`,
+            style: "bodyText",
+          },
+          {
+            text: `${bullet} 1 ${datasetName} for every [#] people`,
+            style: "bodyText",
+          },
+          {
+            text: `${bullet} ${averagePerSquareMile} ${datasetName} every square mile`,
+            style: "bodyText",
+          },
+        ],
+        margin: [0, -183, 0, 0],
+      };
 
-      // Generate the layer description asynchronously and then continue with the slide generation
+      // Fetch the layer description and units asynchronously
       return findDataFromGoogleSheet(sheetData, datasetName).then(
-        (textFromSheet) => {
+        ({ description: textFromSheet, units: dataUnits }) => {
           const layerDescription = {
             stack: [
               {
@@ -1126,6 +1062,17 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             column.width = "auto";
           });
 
+          // New content: Add data units below the legend if available
+          let dataUnitsContent = [];
+          if (dataUnits) {
+            dataUnitsContent.push({
+              text: `* ${dataUnits}`,
+              fontSize: 21,
+              italics: true,
+              margin: [0, 10, 0, 0],
+            });
+          }
+
           // Start with the initial parts of the statistics that are always included
           let statistics = [
             headerWithRectangles,
@@ -1154,22 +1101,12 @@ export default function Widget(props: AllWidgetProps<unknown>) {
             statistics.push({
               columns: [
                 {
-                  text: "Legend",
-                  fontSize: 48,
-                  bold: true,
-                  absolutePosition: { x: 920, y: 878 },
-                },
-                {
                   stack: [
-                    {
-                      text: "Legend",
-                      fontSize: 48,
-                      bold: true,
-                      absolutePosition: { x: 920, y: 878 },
-                    },
                     legendRow,
+                    // Include data units if available
+                    ...dataUnitsContent,
                   ],
-                  absolutePosition: { x: 920, y: 945 },
+                  absolutePosition: { x: 920, y: 885 },
                 },
               ],
             });

@@ -285,6 +285,198 @@ export const filterPointsWithinPolygon = async (
       geometry: geometryToUse,
       spatialRelationship: "intersects",
     };
+
+    // Extract legend data for point layers
+    const featureLayer = currentLayerView.layer;
+    console.log("Feature layer:", featureLayer);
+    const featureLayerRenderer = featureLayer.renderer;
+    console.log("Feature layer renderer:", featureLayerRenderer);
+
+    if (featureLayerRenderer.type === "class-breaks") {
+      setGlobalSymbol((prevData) => {
+        const newData = { ...prevData };
+        newData[datasetId] = "class-breaks";
+        return newData;
+      });
+
+      setGlobalLegendData((prevData) => {
+        const newData = { ...prevData }; // Clone the previous state to ensure immutability
+        const legendDataForCurrentDataset =
+          featureLayerRenderer.classBreakInfos.map((info) => {
+            const symbol = info.symbol.clone();
+
+            let fillColor = "rgba(0, 0, 0, 1)";
+            let outlineColor = "rgba(0, 0, 0, 1)";
+            let outlineWidth = 1;
+
+            if (symbol.type === "cim") {
+              // Handle CIM symbols
+              const cimSymbol = symbol.data.symbol;
+              const vectorMarkerLayer = cimSymbol.symbolLayers.find(
+                (layer) => layer.type === "CIMVectorMarker"
+              );
+              if (vectorMarkerLayer) {
+                const markerGraphics = vectorMarkerLayer.markerGraphics;
+                if (markerGraphics && markerGraphics.length > 0) {
+                  const graphic = markerGraphics[0];
+                  const graphicSymbol = graphic.symbol;
+                  if (graphicSymbol && graphicSymbol.symbolLayers) {
+                    const fillLayer = graphicSymbol.symbolLayers.find(
+                      (layer) => layer.type === "CIMSolidFill"
+                    );
+                    if (fillLayer && fillLayer.color) {
+                      const [r, g, b, a] = fillLayer.color; // RGBA values
+                      fillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+                    }
+                    const strokeLayer = graphicSymbol.symbolLayers.find(
+                      (layer) => layer.type === "CIMSolidStroke"
+                    );
+                    if (strokeLayer && strokeLayer.color) {
+                      const [r, g, b, a] = strokeLayer.color;
+                      outlineColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+                      outlineWidth = strokeLayer.width || 1;
+                    }
+                  }
+                }
+              }
+            } else if (symbol.type === "simple-marker") {
+              fillColor = symbol.color.toCss(true);
+              outlineColor = symbol.outline.color.toCss(true);
+              outlineWidth = symbol.outline.width;
+            }
+
+            return {
+              label: info.label,
+              fillColor: fillColor,
+              outlineColor: outlineColor,
+              outlineWidth: outlineWidth,
+              symbolType: "point", // Indicate that this is a point symbol
+            };
+          });
+
+        newData[datasetId] = legendDataForCurrentDataset;
+        return newData; // Return the new state
+      });
+    } else if (featureLayerRenderer.type === "unique-value") {
+      setGlobalSymbol((prevData) => {
+        const newData = { ...prevData };
+        newData[datasetId] = "unique-value";
+        return newData;
+      });
+
+      setGlobalLegendData((prevData) => {
+        const newData = { ...prevData };
+
+        const legendDataForCurrentDataset =
+          featureLayerRenderer.uniqueValueInfos.map((info) => {
+            const symbol = info.symbol.clone();
+
+            let fillColor = "rgba(0, 0, 0, 1)";
+            let outlineColor = "rgba(0, 0, 0, 1)";
+            let outlineWidth = 1;
+
+            if (symbol.type === "cim") {
+              // Handle CIM symbols
+              const cimSymbol = symbol.data.symbol;
+              const vectorMarkerLayer = cimSymbol.symbolLayers.find(
+                (layer) => layer.type === "CIMVectorMarker"
+              );
+              if (vectorMarkerLayer) {
+                const markerGraphics = vectorMarkerLayer.markerGraphics;
+                if (markerGraphics && markerGraphics.length > 0) {
+                  const graphic = markerGraphics[0];
+                  const graphicSymbol = graphic.symbol;
+                  if (graphicSymbol && graphicSymbol.symbolLayers) {
+                    const fillLayer = graphicSymbol.symbolLayers.find(
+                      (layer) => layer.type === "CIMSolidFill"
+                    );
+                    if (fillLayer && fillLayer.color) {
+                      const [r, g, b, a] = fillLayer.color; // RGBA values
+                      fillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+                    }
+                    const strokeLayer = graphicSymbol.symbolLayers.find(
+                      (layer) => layer.type === "CIMSolidStroke"
+                    );
+                    if (strokeLayer && strokeLayer.color) {
+                      const [r, g, b, a] = strokeLayer.color;
+                      outlineColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+                      outlineWidth = strokeLayer.width || 1;
+                    }
+                  }
+                }
+              }
+            } else if (symbol.type === "simple-marker") {
+              fillColor = symbol.color.toCss(true);
+              outlineColor = symbol.outline.color.toCss(true);
+              outlineWidth = symbol.outline.width;
+            }
+
+            return {
+              label: info.label,
+              fillColor: fillColor,
+              outlineColor: outlineColor,
+              outlineWidth: outlineWidth,
+              symbolType: "point", // Indicate that this is a point symbol
+            };
+          });
+
+        newData[datasetId] = legendDataForCurrentDataset;
+        return newData;
+      });
+    } else if (featureLayerRenderer.type === "simple") {
+      setGlobalSymbol((prevData) => {
+        const newData = { ...prevData };
+        newData[datasetId] = "simple";
+        return newData;
+      });
+
+      setGlobalLegendData((prevData) => {
+        const newData = { ...prevData };
+
+        const symbol = featureLayerRenderer.symbol.clone();
+
+        let fillColor = "rgba(0, 0, 0, 1)";
+        let outlineColor = "rgba(0, 0, 0, 1)";
+        let outlineWidth = 1;
+
+        if (symbol.type === "cim") {
+          // Handle CIM symbols
+          const cimSymbol = symbol.data.symbol;
+          const vectorMarkerLayer = cimSymbol.symbolLayers.find(
+            (layer) => layer.type === "CIMVectorMarker"
+          );
+          if (vectorMarkerLayer) {
+            const markerGraphics = vectorMarkerLayer.markerGraphics;
+            if (markerGraphics && markerGraphics.length > 0) {
+              const graphic = markerGraphics[0];
+              const graphicSymbol = graphic.symbol;
+              if (graphicSymbol && graphicSymbol.symbolLayers) {
+                const fillLayer = graphicSymbol.symbolLayers.find(
+                  (layer) => layer.type === "CIMSolidFill"
+                );
+                if (fillLayer && fillLayer.color) {
+                  const [r, g, b, a] = fillLayer.color; // RGBA values
+                  fillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+                }
+                const strokeLayer = graphicSymbol.symbolLayers.find(
+                  (layer) => layer.type === "CIMSolidStroke"
+                );
+                if (strokeLayer && strokeLayer.color) {
+                  const [r, g, b, a] = strokeLayer.color;
+                  outlineColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+                  outlineWidth = strokeLayer.width || 1;
+                }
+              }
+            }
+          }
+        }
+
+        newData[datasetId] = null;
+        return newData;
+      });
+    } else {
+      console.log("Unknown renderer type");
+    }
   } else {
     console.error("Unsupported geometry type for filtering or clipping.");
   }

@@ -7,7 +7,6 @@ export const fetchDataFromGoogleSheet = (
   return fetch(url)
     .then((response) => response.json())
     .then((data) => {
-      console.log("Data from Google Sheets: ", data.values);
       return data.values || [];
     })
     .catch((error) => {
@@ -19,7 +18,7 @@ export const fetchDataFromGoogleSheet = (
 export const findDataFromGoogleSheet = (
   sheetData: any[],
   datasetName: string
-): Promise<string> => {
+): Promise<{ description: string; units: string | null }> => {
   return new Promise((resolve, reject) => {
     try {
       if (!sheetData.length) {
@@ -30,8 +29,13 @@ export const findDataFromGoogleSheet = (
       const headers = sheetData[0];
       const codeNameIndex = headers.indexOf("CodeNameReference");
       const codeDescriptionIndex = headers.indexOf("CodeDescriptionReference");
+      const dataUnitsIndex = headers.indexOf("DataUnits"); // Added this line
 
-      if (codeNameIndex === -1 || codeDescriptionIndex === -1) {
+      if (
+        codeNameIndex === -1 ||
+        codeDescriptionIndex === -1 ||
+        dataUnitsIndex === -1 // Added this line
+      ) {
         throw new Error("Required columns not found in the sheet");
       }
 
@@ -41,11 +45,13 @@ export const findDataFromGoogleSheet = (
       );
 
       if (matchingRow) {
-        // Resolve with the value from the CodeDescriptionReference column
-        resolve(matchingRow[codeDescriptionIndex]);
+        // Get the description and units
+        const description = matchingRow[codeDescriptionIndex];
+        const units = matchingRow[dataUnitsIndex] || null; // Get units or null if empty
+        resolve({ description, units });
       } else {
         console.warn("No matching dataset name found in the sheet.");
-        resolve(""); // Resolve with an empty string if no match is found
+        resolve({ description: "", units: null }); // Return empty values if no match is found
       }
     } catch (error) {
       console.error("Error processing data from Google Sheets:", error);
