@@ -60,7 +60,7 @@ export const filterPointsWithinPolygon = async (
   setGlobalLegendData: SetGlobalLegendDataType, // This is your callback function
   setGlobalSymbol: setGlobalSymbolType
 ): Promise<void> => {
-  // Print layerviews
+  // Get the current layer view
   const currentLayerView = layerViews[datasetId];
   if (!currentLayerView) {
     console.error(`No layer view found for dataset ID: ${datasetId}`);
@@ -367,58 +367,85 @@ export const filterPointsWithinPolygon = async (
       setGlobalLegendData((prevData) => {
         const newData = { ...prevData };
 
-        const legendDataForCurrentDataset =
-          featureLayerRenderer.uniqueValueInfos.map((info) => {
-            const symbol = info.symbol.clone();
+        // Use a Map to keep track of unique symbols
+        const symbolMap = new Map<string, any>();
 
-            let fillColor = "rgba(0, 0, 0, 1)";
-            let outlineColor = "rgba(0, 0, 0, 1)";
-            let outlineWidth = 1;
+        featureLayerRenderer.uniqueValueInfos.forEach((info) => {
+          const symbol = info.symbol.clone();
 
-            if (symbol.type === "cim") {
-              // Handle CIM symbols
-              const cimSymbol = symbol.data.symbol;
-              const vectorMarkerLayer = cimSymbol.symbolLayers.find(
-                (layer) => layer.type === "CIMVectorMarker"
-              );
-              if (vectorMarkerLayer) {
-                const markerGraphics = vectorMarkerLayer.markerGraphics;
-                if (markerGraphics && markerGraphics.length > 0) {
-                  const graphic = markerGraphics[0];
-                  const graphicSymbol = graphic.symbol;
-                  if (graphicSymbol && graphicSymbol.symbolLayers) {
-                    const fillLayer = graphicSymbol.symbolLayers.find(
-                      (layer) => layer.type === "CIMSolidFill"
-                    );
-                    if (fillLayer && fillLayer.color) {
-                      const [r, g, b, a] = fillLayer.color; // RGBA values
-                      fillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-                    }
-                    const strokeLayer = graphicSymbol.symbolLayers.find(
-                      (layer) => layer.type === "CIMSolidStroke"
-                    );
-                    if (strokeLayer && strokeLayer.color) {
-                      const [r, g, b, a] = strokeLayer.color;
-                      outlineColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-                      outlineWidth = strokeLayer.width || 1;
-                    }
+          let fillColor = "rgba(0, 0, 0, 1)";
+          let outlineColor = "rgba(0, 0, 0, 1)";
+          let outlineWidth = 1;
+
+          if (symbol.type === "cim") {
+            // Handle CIM symbols
+            const cimSymbol = symbol.data.symbol;
+            const vectorMarkerLayer = cimSymbol.symbolLayers.find(
+              (layer) => layer.type === "CIMVectorMarker"
+            );
+            if (vectorMarkerLayer) {
+              const markerGraphics = vectorMarkerLayer.markerGraphics;
+              if (markerGraphics && markerGraphics.length > 0) {
+                const graphic = markerGraphics[0];
+                const graphicSymbol = graphic.symbol;
+                if (graphicSymbol && graphicSymbol.symbolLayers) {
+                  const fillLayer = graphicSymbol.symbolLayers.find(
+                    (layer) => layer.type === "CIMSolidFill"
+                  );
+                  if (fillLayer && fillLayer.color) {
+                    const [r, g, b, a] = fillLayer.color; // RGBA values
+                    fillColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+                  }
+                  const strokeLayer = graphicSymbol.symbolLayers.find(
+                    (layer) => layer.type === "CIMSolidStroke"
+                  );
+                  if (strokeLayer && strokeLayer.color) {
+                    const [r, g, b, a] = strokeLayer.color;
+                    outlineColor = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+                    outlineWidth = strokeLayer.width || 1;
                   }
                 }
               }
-            } else if (symbol.type === "simple-marker") {
-              fillColor = symbol.color.toCss(true);
-              outlineColor = symbol.outline.color.toCss(true);
-              outlineWidth = symbol.outline.width;
             }
+          } else if (symbol.type === "simple-marker") {
+            fillColor = symbol.color.toCss(true);
+            outlineColor = symbol.outline.color.toCss(true);
+            outlineWidth = symbol.outline.width;
+          }
 
-            return {
-              label: info.label,
+          // Create a key based on the symbol properties
+          const symbolKey = `${fillColor}-${outlineColor}-${outlineWidth}`;
+
+          if (symbolMap.has(symbolKey)) {
+            // Append the label to existing entry if not already present
+            const existingEntry = symbolMap.get(symbolKey);
+            if (!existingEntry.labels.includes(info.label)) {
+              existingEntry.labels.push(info.label);
+            }
+          } else {
+            // Add new entry
+            symbolMap.set(symbolKey, {
+              labels: [info.label],
               fillColor: fillColor,
               outlineColor: outlineColor,
               outlineWidth: outlineWidth,
               symbolType: "point", // Indicate that this is a point symbol
+            });
+          }
+        });
+
+        // Convert the Map values to an array for the legend data
+        const legendDataForCurrentDataset = Array.from(symbolMap.values()).map(
+          (entry) => {
+            return {
+              label: entry.labels.join(", "), // Combine labels
+              fillColor: entry.fillColor,
+              outlineColor: entry.outlineColor,
+              outlineWidth: entry.outlineWidth,
+              symbolType: entry.symbolType,
             };
-          });
+          }
+        );
 
         newData[datasetId] = legendDataForCurrentDataset;
         return newData;
